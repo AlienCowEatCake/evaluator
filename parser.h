@@ -17,6 +17,21 @@
 #include <limits>
 #include <cctype>
 
+#if defined _WIN32 || defined _WIN64
+#if !defined NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+#if defined __GNUC__
+#define CALLING_CONVENTION __attribute__((__cdecl__))
+#elif defined _MSC_VER
+#define CALLING_CONVENTION __cdecl
+#else
+#define CALLING_CONVENTION
+#endif
+
 #if defined(_MSC_VER) && _MSC_VER < 1800
 namespace std
 {
@@ -32,10 +47,16 @@ namespace std
 }
 #endif
 
+// =================================================================================================
+// =================================================================================================
+// =================================================================================================
+
 // Internal parser's classes & functions
 namespace parser_internal
 {
     using namespace std;
+
+    // =============================================================================================
 
     // Auto-allocatable container for variables.
     template<typename T> class var_container
@@ -52,6 +73,8 @@ namespace parser_internal
         const var_container & operator = (const var_container & other) { val = new T; * val = other.value(); return * this; }
         ~var_container() { delete val; }
     };
+
+    // =============================================================================================
 
     // All fultions (must NOT be inline).
     template<typename T> T pi_sin   (const T & arg) { return sin(arg);   }
@@ -85,6 +108,8 @@ namespace parser_internal
     template<typename T> T pi_real  (const T & arg) { return arg;        }
     template<typename T> T pi_conj  (const T & arg) { return arg;        }
 
+    // =============================================================================================
+
     // Add function pointers into container.
     template<typename T>
     void init_functions(map<string, T(*)(const T &)> & funcs_map)
@@ -111,12 +136,16 @@ namespace parser_internal
         funcs_map["sqrt"]  = pi_sqrt;
     }
 
+    // =============================================================================================
+
     // All operators (must NOT be inline).
     template<typename T> T pi_plus  (const T & larg, const T & rarg) { return larg + rarg; }
     template<typename T> T pi_minus (const T & larg, const T & rarg) { return larg - rarg; }
     template<typename T> T pi_mult  (const T & larg, const T & rarg) { return larg * rarg; }
     template<typename T> T pi_div   (const T & larg, const T & rarg) { return larg / rarg; }
     template<typename T> T pi_pow   (const T & larg, const T & rarg) { return pow(larg, rarg); }
+
+    // =============================================================================================
 
     // Add operators pointers into container.
     template<typename T>
@@ -129,6 +158,8 @@ namespace parser_internal
         opers_map['/'] = oper_type(2, pi_div);
         opers_map['^'] = oper_type(3, pi_pow);
     }
+
+    // =============================================================================================
 
     // Init default constant values.
     template<typename T>
@@ -145,11 +176,15 @@ namespace parser_internal
         }
     }
 
+    // =============================================================================================
+
     // The universal parser object. It may be operator, function, variable or constant.
     template<typename T>
     class parser_object
     {
-    protected:
+//        friend class parser<T>;
+//    protected:
+    public:
         enum parser_object_type
         {
             PI_OBJ_OPERATOR, PI_OBJ_FUNCTION, PI_OBJ_VARIABLE, PI_OBJ_CONSTANT
@@ -197,6 +232,8 @@ namespace parser_internal
         }
     };
 
+    // =============================================================================================
+
     template<typename T, const size_t max_size = 16>
     class simple_stack
     {
@@ -227,6 +264,10 @@ namespace parser_internal
     };
 }
 
+// =================================================================================================
+// =================================================================================================
+// =================================================================================================
+
 template<typename T>
 class parser
 {
@@ -238,6 +279,10 @@ protected:
     std::map<char, std::pair<unsigned short int, T(*)(const T &, const T &)> > operators;
     bool status;
     std::string error_string;
+    bool is_compiled;
+    char * jit_memory;
+
+    // =============================================================================================
 
     template<typename U>
     inline T incorrect_number(const std::complex<U> &) const
@@ -266,14 +311,21 @@ protected:
         return val >= num;
     }
 
+    // =============================================================================================
+
     void init()
     {
         using namespace std;
         using namespace parser_internal;
+        status = false;
+        is_compiled = false;
+        jit_memory = NULL;
         init_functions(functions);
         init_operators(operators);
         init_constants(constants);
     }
+
+    // =============================================================================================
 
     void convert_to_objects()
     {
@@ -313,6 +365,8 @@ protected:
         expression.clear();
     }
 
+    // =============================================================================================
+
     void copy_from_other_parser(const parser & other)
     {
         expression = other.expression;
@@ -322,7 +376,11 @@ protected:
         operators = other.operators;
         status = other.status;
         error_string = other.error_string;
+        is_compiled = false;
+        jit_memory = NULL;
     }
+
+    // =============================================================================================
 
 public:
     parser(const parser & other)
@@ -339,26 +397,40 @@ public:
 
     parser()
     {
-        status = false;
         init();
     }
 
     parser(const std::string & str)
     {
-        status = false;
         init();
         parse(str);
     }
+
+    ~parser()
+    {
+        if(jit_memory)
+        {
+#if defined _WIN32 || defined _WIN64
+            free(jit_memory);
+#endif
+        }
+    }
+
+    // =============================================================================================
 
     inline const std::string & get_error() const
     {
         return error_string;
     }
 
+    // =============================================================================================
+
     inline void set_const(const std::string & name, const T & value)
     {
         constants[name].value() = value;
     }
+
+    // =============================================================================================
 
     void reset_const()
     {
@@ -371,10 +443,14 @@ public:
                 constants[it->str()].value() = incorrect_number(T());
     }
 
+    // =============================================================================================
+
     inline bool is_parsed() const
     {
         return status;
     }
+
+    // =============================================================================================
 
     bool parse(const std::string & str)
     {
@@ -587,6 +663,8 @@ public:
         return status;
     }
 
+    // =============================================================================================
+
     bool simplify()
     {
         using namespace std;
@@ -758,6 +836,8 @@ public:
         return true;
     }
 
+    // =============================================================================================
+
     bool calculate(T & result)
     {
         using namespace std;
@@ -767,6 +847,14 @@ public:
         {
             error_string = "Not parsed!";
             return false;
+        }
+
+        if(is_compiled)
+        {
+            typedef void(CALLING_CONVENTION * jit_f_type)(void *);
+            jit_f_type func = reinterpret_cast<jit_f_type>(jit_memory);
+            func(& result);
+            return true;
         }
 
         //stack<T> st;
@@ -821,6 +909,84 @@ public:
         result = st.top();
         return true;
     }
+
+    // =============================================================================================
+
+    bool compile()
+    {
+        using namespace std;
+        using namespace parser_internal;
+
+        if(!is_parsed())
+        {
+            error_string = "Not parsed!";
+            return false;
+        }
+
+        if(!jit_memory)
+        {
+            size_t jit_memory_size = 128 * 1024; // 128 KiB
+#if defined _WIN32 || defined _WIN64
+            jit_memory = (char *)malloc(sizeof(char) * jit_memory_size);
+            DWORD tmp;
+            VirtualProtect(jit_memory, jit_memory_size, PAGE_EXECUTE_READWRITE, &tmp);
+#endif
+        }
+
+        char * curr = jit_memory;
+
+        // Prolog
+        // push    ebp
+        *(curr++) = '\x55';
+        // mov     ebp, esp
+        *(curr++) = '\x89';
+        *(curr++) = '\xe5';
+
+        // mov    0x8(%ebp),%eax
+        *(curr++) = '\x8b';
+        *(curr++) = '\x45';
+        *(curr++) = '\x08';
+        // fldl   0x0
+        *(curr++) = '\xdd';
+        *(curr++) = '\x05';
+        double * a = new double;
+        * a = 2;
+        sprintf(curr, "%x", (size_t)a);
+        curr += sizeof(a);
+        // fstpl  (%eax)
+        *(curr++) = '\xdd';
+        *(curr++) = '\x18';
+
+
+/*
+        for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+        {
+            if(it->is_constant() || it->is_variable())
+            {
+                //const T * raw_value = (it->is_variable() ? it->var_value : (&(it->value)));
+                //cout << "push " << raw_value << "->" << * raw_value << " // " << it->str() << endl;
+            }
+            else if(it->is_operator())
+            {
+                cout << "call " << (void*)(it->oper) << " // " << it->str() << endl;
+            }
+            else if(it->is_function())
+            {
+                cout << "call " << (void*)(it->func) << " // " << it->str() << endl;
+            }
+        }
+*/
+        // Epilog
+        // pop     ebp
+        *(curr++) = '\x5d';
+        // ret
+        *(curr++) = '\xc3';
+
+        is_compiled = true;
+        return true;
+    }
+
+    // =============================================================================================
 
     void debug_print() const
     {
