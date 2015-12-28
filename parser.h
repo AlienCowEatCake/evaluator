@@ -22,15 +22,22 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#else
+#include <sys/mman.h>
 #endif
 
-#if defined __GNUC__
-#define CALLING_CONVENTION __attribute__((__cdecl__))
-#elif defined _MSC_VER
-#define CALLING_CONVENTION __cdecl
-#else
-#define CALLING_CONVENTION
+#if (defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+     defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+     defined(__i486__) || defined(__i586__) || defined(__i686__))
+#define PARSER_ARCH_X86
 #endif
+
+#if (defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+     defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+#define PARSER_ARCH_X64
+#endif
+
+#define PARSER_DEBUG_LOG
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 namespace std
@@ -182,9 +189,7 @@ namespace parser_internal
     template<typename T>
     class parser_object
     {
-//        friend class parser<T>;
-//    protected:
-    public:
+    protected:
         enum parser_object_type
         {
             PI_OBJ_OPERATOR, PI_OBJ_FUNCTION, PI_OBJ_VARIABLE, PI_OBJ_CONSTANT
@@ -211,6 +216,7 @@ namespace parser_internal
         inline bool is_function() const { return type == PI_OBJ_FUNCTION; }
         inline bool is_operator() const { return type == PI_OBJ_OPERATOR; }
         inline const string & str() const { return str_; }
+        inline const T * raw_value() const { return (type == PI_OBJ_VARIABLE ? var_value : (& value)); }
         inline T eval() const { return (type == PI_OBJ_VARIABLE ? (* var_value) : value); }
         inline T eval(const T & arg) const { return func(arg); }
         inline T eval(const T & larg, const T & rarg) const { return oper(larg, rarg); }
@@ -280,7 +286,11 @@ protected:
     bool status;
     std::string error_string;
     bool is_compiled;
-    char * jit_memory;
+    char * volatile jit_memory;
+    size_t jit_memory_size;
+    volatile T jit_result;
+    T * volatile jit_stack;
+    size_t jit_stack_size;
 
     // =============================================================================================
 
@@ -320,6 +330,9 @@ protected:
         status = false;
         is_compiled = false;
         jit_memory = NULL;
+        jit_memory_size = 0;
+        jit_stack = NULL;
+        jit_stack_size = 0;
         init_functions(functions);
         init_operators(operators);
         init_constants(constants);
@@ -378,6 +391,9 @@ protected:
         error_string = other.error_string;
         is_compiled = false;
         jit_memory = NULL;
+        jit_memory_size = 0;
+        jit_stack = NULL;
+        jit_stack_size = 0;
     }
 
     // =============================================================================================
@@ -408,11 +424,17 @@ public:
 
     ~parser()
     {
-        if(jit_memory)
+        if(jit_memory && jit_memory_size)
         {
 #if defined _WIN32 || defined _WIN64
             free(jit_memory);
+#else
+            munmap(jit_memory, jit_memory_size);
 #endif
+        }
+        if(jit_stack && jit_stack_size)
+        {
+            delete [] jit_stack;
         }
     }
 
@@ -851,9 +873,10 @@ public:
 
         if(is_compiled)
         {
-            typedef void(CALLING_CONVENTION * jit_f_type)(void *);
+            typedef void(* jit_f_type)();
             jit_f_type func = reinterpret_cast<jit_f_type>(jit_memory);
-            func(& result);
+            func();
+            result = jit_result;
             return true;
         }
 
@@ -914,6 +937,12 @@ public:
 
     bool compile()
     {
+#if defined PARSER_DEBUG_LOG
+#define pdbg(s) cout << (s) << endl
+#else
+#define pdbg(s) (void)(s)
+#endif
+
         using namespace std;
         using namespace parser_internal;
 
@@ -923,65 +952,302 @@ public:
             return false;
         }
 
-        if(!jit_memory)
+        if(!jit_memory || !jit_memory_size)
         {
-            size_t jit_memory_size = 128 * 1024; // 128 KiB
+            jit_memory_size = 128 * 1024; // 128 KiB
 #if defined _WIN32 || defined _WIN64
-            jit_memory = (char *)malloc(sizeof(char) * jit_memory_size);
+            jit_memory = (char *)malloc(jit_memory_size);
             DWORD tmp;
             VirtualProtect(jit_memory, jit_memory_size, PAGE_EXECUTE_READWRITE, &tmp);
+#else
+            jit_memory = mmap(NULL, jit_memory_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
+        }
+        memset(jit_memory, 0, jit_memory_size);
+
+        if(!jit_stack || !jit_stack_size)
+        {
+            jit_stack_size = 128 * 1024; // 128 KiB
+            jit_stack = new T [jit_stack_size];
         }
 
         char * curr = jit_memory;
+        char * free_mem = jit_memory + jit_memory_size - 1 - sizeof(T);
+
+#if defined PARSER_ARCH_X86
+        pdbg("# Codegen: x86");
 
         // Prolog
-        // push    ebp
-        *(curr++) = '\x55';
-        // mov     ebp, esp
-        *(curr++) = '\x89';
-        *(curr++) = '\xe5';
-
-        // mov    0x8(%ebp),%eax
-        *(curr++) = '\x8b';
-        *(curr++) = '\x45';
-        *(curr++) = '\x08';
-        // fldl   0x0
-        *(curr++) = '\xdd';
-        *(curr++) = '\x05';
-        double * a = new double;
-        * a = 2;
-        sprintf(curr, "%x", (size_t)a);
-        curr += sizeof(a);
-        // fstpl  (%eax)
-        *(curr++) = '\xdd';
-        *(curr++) = '\x18';
-
-
+//        // push    ebp
+//        *(curr++) = '\x55';
+//        pdbg("push\tebp");
+//        // mov     ebp, esp
+//        *(curr++) = '\x89';
+//        *(curr++) = '\xe5';
+//        pdbg("mov\tebp, esp");
+//        // finit
+//        *(curr++) = '\xdb';
+//        *(curr++) = '\xe3';
+//        pdbg("finit");
 /*
-        for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+        if(typeid(T) == typeid(float) && sizeof(float) == 4)
         {
-            if(it->is_constant() || it->is_variable())
+            pdbg("# Type: float");
+            for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
-                //const T * raw_value = (it->is_variable() ? it->var_value : (&(it->value)));
-                //cout << "push " << raw_value << "->" << * raw_value << " // " << it->str() << endl;
+                if(it->is_constant() || it->is_variable())
+                {
+                    const T * val = it->raw_value();
+                    // push    imm32
+                    *(curr++) = '\x68';
+                    memcpy(curr, & val, sizeof(T*));
+                    curr += sizeof(T*);
+                    pdbg(string("push\timm32") + string("\t# ") + it->str());
+                }
+                else if(it->is_operator())
+                {
+                    // fld dword ptr [esp]
+                    *(curr++) = '\xd9'; // double - dd
+                    *(curr++) = '\x04';
+                    *(curr++) = '\x24';
+                    pdbg("fld\tdword ptr [esp]");
+                    // add    esp, 4
+                    *(curr++) = '\x83';
+                    *(curr++) = '\xc4';
+                    *(curr++) = '\x04';
+                    pdbg("add\tesp, 4");
+
+                    if(it->str()[0] == '+')
+                    {
+                        // fadd    dword ptr [esp]
+                        *(curr++) = '\xd8'; // double - dc
+                        *(curr++) = '\x04';
+                        *(curr++) = '\x24';
+                        pdbg("fadd\tdword ptr [esp]");
+                    }
+                    else
+                    {
+                        error_string = "Unsupported operator " + it->str();
+                        return false;
+                    }
+
+                    // add    esp, 4
+                    *(curr++) = '\x83';
+                    *(curr++) = '\xc4';
+                    *(curr++) = '\x04';
+                    pdbg("add\tesp, 4");
+
+                    // push    imm32
+                    *(curr++) = '\x68';
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    free_mem -= sizeof(T);
+                    pdbg(string("push\timm32") + string("\t# free_mem"));
+
+                    // fstp    dword ptr [esp]
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x1c';
+                    *(curr++) = '\x24';
+                    pdbg("fstp    dword ptr [esp]");
+                }
+                else if(it->is_function())
+                {
+
+                }
             }
-            else if(it->is_operator())
-            {
-                cout << "call " << (void*)(it->oper) << " // " << it->str() << endl;
-            }
-            else if(it->is_function())
-            {
-                cout << "call " << (void*)(it->func) << " // " << it->str() << endl;
-            }
+
+            // fld dword ptr [esp]
+            *(curr++) = '\xd9'; // double - dd
+            *(curr++) = '\x04';
+            *(curr++) = '\x24';
+            pdbg("fld\tdword ptr [esp]");
+            // add    esp, 4
+            *(curr++) = '\x83';
+            *(curr++) = '\xc4';
+            *(curr++) = '\x04';
+            pdbg("add\tesp, 4");
+            // fstp    imm32
+            *(curr++) = '\xd9';
+            *(curr++) = '\x15';
+            free_mem = (char *)(& jit_result);
+            memcpy(curr, & free_mem, sizeof(T*));
+            curr += sizeof(T*);
+            pdbg(string("fstp\timm32") + string("\t# result"));
         }
 */
+        /*
+        jit_result = 42;
+        // pi
+        *(curr++) = '\xd9';
+        *(curr++) = '\xeb';
+        // push    imm32
+        *(curr++) = '\x68';
+        free_mem = (char *)(& jit_result);
+        memcpy(curr, & free_mem, sizeof(T*));
+        curr += sizeof(T*);
+        // fstp
+        *(curr++) = '\xd9';
+        *(curr++) = '\x1c';
+        *(curr++) = '\x24';
+        // fld dword ptr [esp]
+//        *(curr++) = '\xd9'; // double - dd
+//        *(curr++) = '\x04';
+//        *(curr++) = '\x24';
+        // add    esp, 4
+        *(curr++) = '\x83';
+        *(curr++) = '\xc4';
+        *(curr++) = '\x04';
+        // unload
+//        *(curr++) = '\xd9';
+//        *(curr++) = '\x15';
+//        free_mem = (char *)(& jit_result);
+//        memcpy(curr, & free_mem, sizeof(T*));
+//        curr += sizeof(T*);
+*/
+/*
+        jit_result = 42;
+        // pi
+//        *(curr++) = '\xd9';
+//        *(curr++) = '\xeb';
+        // push    imm32
+//        *(curr++) = '\x68';
+//        free_mem = (char *)(& jit_result);
+//        memcpy(curr, & free_mem, sizeof(T*));
+//        curr += sizeof(T*);
+
+        T * a = new T;
+        *a = 100;
+        *(curr++) = '\xd9';
+        *(curr++) = '\x05';
+        free_mem = (char *)(a);
+        memcpy(curr, & free_mem, sizeof(T*));
+        curr += sizeof(T*);
+
+        // fstp
+//        *(curr++) = '\xd9';
+//        *(curr++) = '\x1c';
+//        *(curr++) = '\x24';
+        // fld dword ptr [esp]
+//        *(curr++) = '\xd9'; // double - dd
+//        *(curr++) = '\x04';
+//        *(curr++) = '\x24';
+        // add    esp, 4
+//        *(curr++) = '\x83';
+//        *(curr++) = '\xc4';
+//        *(curr++) = '\x04';
+        // unload
+        *(curr++) = '\xd9';
+        *(curr++) = '\x15';
+        free_mem = (char *)(& jit_result);
+        memcpy(curr, & free_mem, sizeof(T*));
+        curr += sizeof(T*);
+*/
+        T * jit_stack_curr = jit_stack;
+
+        if(typeid(T) == typeid(float) && sizeof(float) == 4)
+        {
+            pdbg("# Type: float");
+            for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            {
+                if(it->is_constant() || it->is_variable())
+                {
+                    const T * val = it->raw_value();
+                    // fld    imm32
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x05';
+                    free_mem = (char *)(val);
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    pdbg(string("fld\timm32") + string("\t# ") + it->str() + string(" -> FPU"));
+
+                    // fstp    imm32
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x15';
+                    free_mem = (char *)(jit_stack_curr);
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    jit_stack_curr++;
+                    pdbg(string("fstp\timm32") + string("\t# FPU -> jit_stack"));
+                }
+                else if(it->is_operator())
+                {
+                    // fld    imm32
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x05';
+                    jit_stack_curr--;
+                    free_mem = (char *)(jit_stack_curr);
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
+
+                    // fld    imm32
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x05';
+                    jit_stack_curr--;
+                    free_mem = (char *)(jit_stack_curr);
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
+
+                    if(it->str()[0] == '+')
+                    {
+                        // fadd
+                        *(curr++) = '\xde';
+                        *(curr++) = '\xc1';
+                        pdbg("fadd");
+                    }
+                    else
+                    {
+                        error_string = "Unsupported operator " + it->str();
+                        return false;
+                    }
+
+                    // fstp    imm32
+                    *(curr++) = '\xd9';
+                    *(curr++) = '\x15';
+                    free_mem = (char *)(jit_stack_curr);
+                    memcpy(curr, & free_mem, sizeof(T*));
+                    curr += sizeof(T*);
+                    jit_stack_curr++;
+                    pdbg(string("fstp\timm32") + string("\t# FPU -> jit_stack"));
+                }
+                else if(it->is_function())
+                {
+
+                }
+            }
+
+            // fld    imm32
+            *(curr++) = '\xd9';
+            *(curr++) = '\x05';
+            jit_stack_curr--;
+            free_mem = (char *)(jit_stack_curr);
+            memcpy(curr, & free_mem, sizeof(T*));
+            curr += sizeof(T*);
+            pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
+
+            // fstp    imm32
+            *(curr++) = '\xd9';
+            *(curr++) = '\x15';
+            free_mem = (char *)(& jit_result);
+            memcpy(curr, & free_mem, sizeof(T*));
+            curr += sizeof(T*);
+            pdbg(string("fstp\timm32") + string("\t# FPU -> result"));
+        }
+
         // Epilog
-        // pop     ebp
-        *(curr++) = '\x5d';
+//        // pop     ebp
+//        *(curr++) = '\x5d';
+//        pdbg("pop\tebp");
         // ret
         *(curr++) = '\xc3';
+        pdbg("ret");
+#else
+        error_string = "Unsupported arch!";
+        return false;
+#endif
 
+#undef pdbg
         is_compiled = true;
         return true;
     }

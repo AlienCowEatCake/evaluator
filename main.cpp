@@ -17,18 +17,18 @@ int main()
     cout << q[10].pointer() << endl;
     */
 
-    parser<double> p;
-    //parser<complex<double> > p;
-    //parser<int> p;
-    p.parse("2*x+y");
-    p.simplify();
-    p.compile();
-    p.set_const("x", 2);
-    p.set_const("y", 2);
+    typedef float T;
+
+    parser<T> p;
+    //p.parse("x+y");
+    p.parse("2+2");
+    //p.simplify();
+    if(!p.compile())
+        cout << p.get_error() << endl;
+    //p.set_const("x", 2);
+    //p.set_const("y", 2);
     p.debug_print();
-    double result = 42;
-    //complex<double> result;
-    //int result;
+    T result = 42;
     if(!p.calculate(result))
         cout << p.get_error() << endl;
     else
