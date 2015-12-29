@@ -41,22 +41,25 @@ int main()
     //p.parse("2-(2+(5*3+2))");
     //p.parse("2^3");
     //p.simplify();
-    p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
+    //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
+    p.parse("exp(log(sin(asin(0.8))))");
     p.set_const("x", 2);
     p.set_const("y", 2);
     p.set_const("z", 2);
 
-//    if(!p.calculate(result))
-//        cout << p.get_error() << endl;
-//    else
-//        cout << result << endl;
+    if(!p.calculate(result))
+        cout << p.get_error() << endl;
+    else
+        cout << result << endl;
 
-    size_t exp_num = 1000000000;
+    size_t exp_num = 100000000;
+    T sum = 0;
     long t = mtime();
     for(size_t i = 0; i < exp_num; i++)
     {
         T result;
         p.calculate(result);
+        sum += result;
     }
     t = mtime() - t;
     cout << "Stack: " << t << endl;
@@ -66,23 +69,37 @@ int main()
     //p.set_const("x", 2);
     //p.set_const("y", 2);
 //    p.debug_print();
-//    if(!p.calculate(result))
-//        cout << p.get_error() << endl;
-//    else
-//        cout << result << endl;
-//    if(!p.calculate(result))
-//        cout << p.get_error() << endl;
-//    else
-//        cout << result << endl;
+    if(!p.calculate(result))
+        cout << p.get_error() << endl;
+    else
+        cout << result << endl;
+    if(!p.calculate(result))
+        cout << p.get_error() << endl;
+    else
+        cout << result << endl;
 
     t = mtime();
     for(size_t i = 0; i < exp_num; i++)
     {
         T result;
         p.calculate(result);
+        sum += result;
     }
     t = mtime() - t;
     cout << "JIT: " << t << endl;
+
+    t = mtime();
+    for(size_t i = 0; i < exp_num; i++)
+    {
+        T result;
+        T x = 2, z = 2;
+        result = exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z));
+        sum += result;
+    }
+    t = mtime() - t;
+    cout << "Native: " << t << endl;
+
+    cout << sum << endl;
 
 #if defined _WIN32
     system("pause");

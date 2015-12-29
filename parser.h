@@ -960,7 +960,8 @@ protected:
 
     void fld_ptr(char *& code_curr, const T * ptr) const
     {
-        // fld    dword ptr ds:[ptr]
+#if defined PARSER_ARCH_X86
+        // fld    [dq]word ptr ds:[ptr]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';
         else
@@ -970,13 +971,32 @@ protected:
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
 #if defined PARSER_DEBUG_LOG
-        printf("fld\tdword ptr ds:[%xh]\n", (size_t)ptr);
+        printf("fld\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
+#endif
+#elif defined PARSER_ARCH_X64
+        // mov    rdx, 0aaaaaaaaaaaaaaah
+        *(code_curr++) = '\x48';
+        *(code_curr++) = '\xba';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+        // fld    [dq]word ptr [rdx]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x02';
+#if defined PARSER_DEBUG_LOG
+        printf("mov\trdx, %llxh\n", (size_t)ptr);
+        printf("fld\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
+#endif
 #endif
     }
 
     void fstp_ptr(char *& code_curr, const T * ptr) const
     {
-        // fstp    dword ptr ds:[ptr]
+#if defined PARSER_ARCH_X86
+        // fstp    [dq]word ptr ds:[ptr]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';
         else
@@ -986,60 +1006,78 @@ protected:
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
 #if defined PARSER_DEBUG_LOG
-        printf("fstp\tdword ptr ds:[%xh]\n", (size_t)ptr);
+        printf("fstp\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
 #endif
-    }
-
-    template<typename U>
-    void fist_ptr(char *& code_curr, const U * ptr) const
-    {
-        // fist         [d]word ptr ds:[3C37E0h]
-        size_t sz = sizeof(U);
-        switch(sz)
-        {
-        case 4: // dword
-            *(code_curr++) = '\xdb';
-            break;
-        default: // word
-            *(code_curr++) = '\xdf';
-            break;
-        }
-        *(code_curr++) = '\x15';
+#elif defined PARSER_ARCH_X64
+        // mov    rdx, 0aaaaaaaaaaaaaaah
+        *(code_curr++) = '\x48';
+        *(code_curr++) = '\xba';
         const char * tmp_mem = reinterpret_cast<const char *>(ptr);
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
+        // fstp    [dq]word ptr [rdx]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x1a';
 #if defined PARSER_DEBUG_LOG
-        printf("fist\tdword ptr ds:[%xh]\n", (size_t)ptr);
+        printf("mov\trdx, %llxh\n", (size_t)ptr);
+        printf("fstp\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
+#endif
 #endif
     }
 
-    template<typename U>
-    void fild_ptr(char *& code_curr, const U * ptr) const
-    {
-        // fild         [dq]word ptr ds:[3C37E0h]
-        size_t sz = sizeof(U);
-        switch(sz)
-        {
-        case 8: // qword
-            *(code_curr++) = '\xdf';
-            *(code_curr++) = '\x2d';
-            break;
-        case 4: // dword
-            *(code_curr++) = '\xdb';
-            *(code_curr++) = '\x05';
-            break;
-        default: // word
-            *(code_curr++) = '\xdf';
-            *(code_curr++) = '\x05';
-            break;
-        }
-        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-        memcpy(code_curr, & tmp_mem, sizeof(T*));
-        code_curr += sizeof(T*);
-#if defined PARSER_DEBUG_LOG
-        printf("fild\tdword ptr ds:[%xh]\n", (size_t)ptr);
-#endif
-    }
+//    template<typename U>
+//    void fist_ptr(char *& code_curr, const U * ptr) const
+//    {
+//        // fist         [d]word ptr ds:[3C37E0h]
+//        size_t sz = sizeof(U);
+//        switch(sz)
+//        {
+//        case 4: // dword
+//            *(code_curr++) = '\xdb';
+//            break;
+//        default: // word
+//            *(code_curr++) = '\xdf';
+//            break;
+//        }
+//        *(code_curr++) = '\x15';
+//        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+//        memcpy(code_curr, & tmp_mem, sizeof(T*));
+//        code_curr += sizeof(T*);
+//#if defined PARSER_DEBUG_LOG
+//        printf("fist\tdword ptr ds:[%xh]\n", (size_t)ptr);
+//#endif
+//    }
+
+//    template<typename U>
+//    void fild_ptr(char *& code_curr, const U * ptr) const
+//    {
+//        // fild         [dq]word ptr ds:[3C37E0h]
+//        size_t sz = sizeof(U);
+//        switch(sz)
+//        {
+//        case 8: // qword
+//            *(code_curr++) = '\xdf';
+//            *(code_curr++) = '\x2d';
+//            break;
+//        case 4: // dword
+//            *(code_curr++) = '\xdb';
+//            *(code_curr++) = '\x05';
+//            break;
+//        default: // word
+//            *(code_curr++) = '\xdf';
+//            *(code_curr++) = '\x05';
+//            break;
+//        }
+//        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+//        memcpy(code_curr, & tmp_mem, sizeof(T*));
+//        code_curr += sizeof(T*);
+//#if defined PARSER_DEBUG_LOG
+//        printf("fild\tdword ptr ds:[%xh]\n", (size_t)ptr);
+//#endif
+//    }
 
     void fadd(char *& code_curr) const
     {
@@ -1276,7 +1314,7 @@ public:
         char * curr = jit_code;
         T * jit_stack_curr = jit_stack;
 
-#if defined PARSER_ARCH_X86
+#if defined PARSER_ARCH_X86 || defined PARSER_ARCH_X64
         // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
         // Prolog
@@ -1291,11 +1329,15 @@ public:
 
         if((typeid(T) == typeid(float) && sizeof(float) == 4) || (typeid(T) == typeid(double) && sizeof(double) == 8))
         {
+//            char * last_push_pos = NULL;
+//            T * last_push_val = NULL;
             for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 if(it->is_constant() || it->is_variable())
                 {
                     fld_ptr(curr, it->raw_value());
+//                    last_push_pos = curr;
+//                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_operator())
@@ -1303,6 +1345,19 @@ public:
                     jit_stack_curr -= 2;
                     fld_ptr(curr, jit_stack_curr++);
                     fld_ptr(curr, jit_stack_curr--);
+
+//                    jit_stack_curr -= 2;
+//                    if(last_push_val == jit_stack_curr + 1)
+//                    {
+//                        curr = last_push_pos;
+//                        fld_ptr(curr, jit_stack_curr);
+//                        fxch(curr);
+//                    }
+//                    else
+//                    {
+//                        fld_ptr(curr, jit_stack_curr++);
+//                        fld_ptr(curr, jit_stack_curr--);
+//                    }
 
                     string op = it->str();
                     if     (op[0] == '+')
@@ -1336,11 +1391,20 @@ public:
                         return false;
                     }
 
+//                    last_push_pos = curr;
+//                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_function())
                 {
                     fld_ptr(curr, --jit_stack_curr);
+
+//                    jit_stack_curr--;
+//                    if(last_push_val == jit_stack_curr)
+//                        curr = last_push_pos;
+//                    else
+//                        fld_ptr(curr, jit_stack_curr);
+
                     string fu = it->str();
                     if     (fu == "sin")
                         fsin(curr);
@@ -1434,12 +1498,30 @@ public:
                         return false;
                     }
                     // TODO: sinh cosh tanh asinh acosh atanh
+//                    last_push_pos = curr;
+//                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
             }
 
             fld_ptr(curr, --jit_stack_curr);
+
+//            jit_stack_curr--;
+//            if(last_push_val == jit_stack_curr)
+//                curr = last_push_pos;
+//            else
+//                fld_ptr(curr, jit_stack_curr);
+
             fstp_ptr(curr, (T*)(& jit_result));
+        }
+        else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) || (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
+        {
+
+        }
+        else
+        {
+            error_string = "Unsupported type " + string(typeid(T).name()) + "!";
+            return false;
         }
 
         // Epilog
