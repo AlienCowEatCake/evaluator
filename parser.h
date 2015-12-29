@@ -37,7 +37,7 @@
 #define PARSER_ARCH_X64
 #endif
 
-#define PARSER_DEBUG_LOG
+//#define PARSER_ASM_DEBUG
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 namespace std
@@ -270,6 +270,250 @@ namespace parser_internal
         size_t top_place;
         T data[max_size];
     };
+}
+
+// =================================================================================================
+// =================================================================================================
+// =================================================================================================
+
+// Internal parser's functions for opcode generation
+namespace parser_opcodes_generator
+{
+    inline void debug_asm_output(const char * fmt, ...)
+    {
+#if defined PARSER_ASM_DEBUG
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+#else
+        (void)fmt;
+#endif
+    }
+
+    inline void finit(char *& code_curr)
+    {
+        *(code_curr++) = '\xdb';
+        *(code_curr++) = '\xe3';
+        debug_asm_output("finit\n");
+    }
+
+    inline void ret(char *& code_curr)
+    {
+        *(code_curr++) = '\xc3';
+        debug_asm_output("ret\n");
+    }
+
+    template<typename T>
+    void fld_ptr(char *& code_curr, const T * ptr)
+    {
+#if defined PARSER_ARCH_X86
+        // fld    [dq]word ptr ds:[ptr]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x05';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+        debug_asm_output("fld\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
+#elif defined PARSER_ARCH_X64
+        // mov    rdx, 0aaaaaaaaaaaaaaah
+        *(code_curr++) = '\x48';
+        *(code_curr++) = '\xba';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+        debug_asm_output("mov\trdx, %llxh\n", (size_t)ptr);
+        // fld    [dq]word ptr [rdx]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x02';
+        debug_asm_output("fld\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
+#endif
+    }
+
+    template<typename T>
+    void fstp_ptr(char *& code_curr, const T * ptr)
+    {
+#if defined PARSER_ARCH_X86
+        // fstp    [dq]word ptr ds:[ptr]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x1d';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+        debug_asm_output("fstp\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
+#elif defined PARSER_ARCH_X64
+        // mov    rdx, 0aaaaaaaaaaaaaaah
+        *(code_curr++) = '\x48';
+        *(code_curr++) = '\xba';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+        debug_asm_output("mov\trdx, %llxh\n", (size_t)ptr);
+        // fstp    [dq]word ptr [rdx]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x1a';
+        debug_asm_output("fstp\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
+#endif
+    }
+
+    inline void fadd(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xc1';
+        debug_asm_output("fadd\n");
+    }
+
+    inline void fsub(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xe9';
+        debug_asm_output("fsub\n");
+    }
+
+    inline void fmul(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xc9';
+        debug_asm_output("fmul\n");
+    }
+
+    inline void fdiv(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xf9';
+        debug_asm_output("fdiv\n");
+    }
+
+    inline void fyl2x(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf1';
+        debug_asm_output("fyl2x\n");
+    }
+
+    inline void f2xm1(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf0';
+        debug_asm_output("f2xm1\n");
+    }
+
+    inline void fld1(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe8';
+        debug_asm_output("fld1\n");
+    }
+
+    inline void fxch(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xc9';
+        debug_asm_output("fxch\n");
+    }
+
+    inline void fscale(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfd';
+        debug_asm_output("fscale\n");
+    }
+
+    inline void fsin(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfe';
+        debug_asm_output("fsin\n");
+    }
+
+    inline void fcos(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xff';
+        debug_asm_output("fcos\n");
+    }
+
+    inline void fsqrt(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfa';
+        debug_asm_output("fsqrt\n");
+    }
+
+    inline void fptan(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf2';
+        debug_asm_output("fptan\n");
+    }
+
+    inline void fpatan(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf3';
+        debug_asm_output("fpatan\n");
+    }
+
+    inline void fldl2e(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xea';
+        debug_asm_output("fldl2e\n");
+    }
+
+    inline void fldl2t(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe9';
+        debug_asm_output("fldl2t\n");
+    }
+
+    inline void fabs(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe1';
+        debug_asm_output("fabs\n");
+    }
+
+    inline void fldln2(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xed';
+        debug_asm_output("fldln2\n");
+    }
+
+    inline void frndint(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfc';
+        debug_asm_output("frndint\n");
+    }
+
+    inline void fldi(char *& code_curr, int i)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xc0' + i;
+        debug_asm_output("fldi\t%d\n", i);
+    }
+
+    inline void fchs(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe0';
+        debug_asm_output("fchs\n");
+    }
 }
 
 // =================================================================================================
@@ -937,354 +1181,13 @@ public:
 
     // =============================================================================================
 
-protected:
-
-    void finit(char *& code_curr) const
-    {
-        // finit
-        *(code_curr++) = '\xdb';
-        *(code_curr++) = '\xe3';
-#if defined PARSER_DEBUG_LOG
-        printf("finit\n");
-#endif
-    }
-
-    void ret(char *& code_curr) const
-    {
-        // ret
-        *(code_curr++) = '\xc3';
-#if defined PARSER_DEBUG_LOG
-        printf("ret\n");
-#endif
-    }
-
-    void fld_ptr(char *& code_curr, const T * ptr) const
-    {
-#if defined PARSER_ARCH_X86
-        // fld    [dq]word ptr ds:[ptr]
-        if(typeid(T) == typeid(float))
-            *(code_curr++) = '\xd9';
-        else
-            *(code_curr++) = '\xdd';
-        *(code_curr++) = '\x05';
-        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-        memcpy(code_curr, & tmp_mem, sizeof(T*));
-        code_curr += sizeof(T*);
-#if defined PARSER_DEBUG_LOG
-        printf("fld\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
-#endif
-#elif defined PARSER_ARCH_X64
-        // mov    rdx, 0aaaaaaaaaaaaaaah
-        *(code_curr++) = '\x48';
-        *(code_curr++) = '\xba';
-        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-        memcpy(code_curr, & tmp_mem, sizeof(T*));
-        code_curr += sizeof(T*);
-        // fld    [dq]word ptr [rdx]
-        if(typeid(T) == typeid(float))
-            *(code_curr++) = '\xd9';
-        else
-            *(code_curr++) = '\xdd';
-        *(code_curr++) = '\x02';
-#if defined PARSER_DEBUG_LOG
-        printf("mov\trdx, %llxh\n", (size_t)ptr);
-        printf("fld\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
-#endif
-#endif
-    }
-
-    void fstp_ptr(char *& code_curr, const T * ptr) const
-    {
-#if defined PARSER_ARCH_X86
-        // fstp    [dq]word ptr ds:[ptr]
-        if(typeid(T) == typeid(float))
-            *(code_curr++) = '\xd9';
-        else
-            *(code_curr++) = '\xdd';
-        *(code_curr++) = '\x1d';
-        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-        memcpy(code_curr, & tmp_mem, sizeof(T*));
-        code_curr += sizeof(T*);
-#if defined PARSER_DEBUG_LOG
-        printf("fstp\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
-#endif
-#elif defined PARSER_ARCH_X64
-        // mov    rdx, 0aaaaaaaaaaaaaaah
-        *(code_curr++) = '\x48';
-        *(code_curr++) = '\xba';
-        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-        memcpy(code_curr, & tmp_mem, sizeof(T*));
-        code_curr += sizeof(T*);
-        // fstp    [dq]word ptr [rdx]
-        if(typeid(T) == typeid(float))
-            *(code_curr++) = '\xd9';
-        else
-            *(code_curr++) = '\xdd';
-        *(code_curr++) = '\x1a';
-#if defined PARSER_DEBUG_LOG
-        printf("mov\trdx, %llxh\n", (size_t)ptr);
-        printf("fstp\t%cword ptr [rdx]\n", (typeid(T) == typeid(float) ? 'd' : 'q'));
-#endif
-#endif
-    }
-
-//    template<typename U>
-//    void fist_ptr(char *& code_curr, const U * ptr) const
-//    {
-//        // fist         [d]word ptr ds:[3C37E0h]
-//        size_t sz = sizeof(U);
-//        switch(sz)
-//        {
-//        case 4: // dword
-//            *(code_curr++) = '\xdb';
-//            break;
-//        default: // word
-//            *(code_curr++) = '\xdf';
-//            break;
-//        }
-//        *(code_curr++) = '\x15';
-//        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-//        memcpy(code_curr, & tmp_mem, sizeof(T*));
-//        code_curr += sizeof(T*);
-//#if defined PARSER_DEBUG_LOG
-//        printf("fist\tdword ptr ds:[%xh]\n", (size_t)ptr);
-//#endif
-//    }
-
-//    template<typename U>
-//    void fild_ptr(char *& code_curr, const U * ptr) const
-//    {
-//        // fild         [dq]word ptr ds:[3C37E0h]
-//        size_t sz = sizeof(U);
-//        switch(sz)
-//        {
-//        case 8: // qword
-//            *(code_curr++) = '\xdf';
-//            *(code_curr++) = '\x2d';
-//            break;
-//        case 4: // dword
-//            *(code_curr++) = '\xdb';
-//            *(code_curr++) = '\x05';
-//            break;
-//        default: // word
-//            *(code_curr++) = '\xdf';
-//            *(code_curr++) = '\x05';
-//            break;
-//        }
-//        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
-//        memcpy(code_curr, & tmp_mem, sizeof(T*));
-//        code_curr += sizeof(T*);
-//#if defined PARSER_DEBUG_LOG
-//        printf("fild\tdword ptr ds:[%xh]\n", (size_t)ptr);
-//#endif
-//    }
-
-    void fadd(char *& code_curr) const
-    {
-        // fadd
-        *(code_curr++) = '\xde';
-        *(code_curr++) = '\xc1';
-#if defined PARSER_DEBUG_LOG
-        printf("fadd\n");
-#endif
-    }
-
-    void fsub(char *& code_curr) const
-    {
-        // fsub
-        *(code_curr++) = '\xde';
-        *(code_curr++) = '\xe9';
-#if defined PARSER_DEBUG_LOG
-        printf("fsub\n");
-#endif
-    }
-
-    void fmul(char *& code_curr) const
-    {
-        // fmul
-        *(code_curr++) = '\xde';
-        *(code_curr++) = '\xc9';
-#if defined PARSER_DEBUG_LOG
-        printf("fmul\n");
-#endif
-    }
-
-    void fdiv(char *& code_curr) const
-    {
-        // fdiv
-        *(code_curr++) = '\xde';
-        *(code_curr++) = '\xf9';
-#if defined PARSER_DEBUG_LOG
-        printf("fdiv\n");
-#endif
-    }
-
-    void fyl2x(char *& code_curr) const
-    {
-        // fyl2x
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xf1';
-#if defined PARSER_DEBUG_LOG
-        printf("fyl2x\n");
-#endif
-    }
-
-    void f2xm1(char *& code_curr) const
-    {
-        // f2xm1
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xf0';
-#if defined PARSER_DEBUG_LOG
-        printf("f2xm1\n");
-#endif
-    }
-
-    void fld1(char *& code_curr) const
-    {
-        // fld1
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xe8';
-#if defined PARSER_DEBUG_LOG
-        printf("fld1\n");
-#endif
-    }
-
-    void fxch(char *& code_curr) const
-    {
-        // fxch
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xc9';
-#if defined PARSER_DEBUG_LOG
-        printf("fxch\n");
-#endif
-    }
-
-    void fscale(char *& code_curr) const
-    {
-        // fscale
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xfd';
-#if defined PARSER_DEBUG_LOG
-        printf("fscale\n");
-#endif
-    }
-
-    void fsin(char *& code_curr) const
-    {
-        // fsin
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xfe';
-#if defined PARSER_DEBUG_LOG
-        printf("fsin\n");
-#endif
-    }
-
-    void fcos(char *& code_curr) const
-    {
-        // fcos
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xff';
-#if defined PARSER_DEBUG_LOG
-        printf("fcos\n");
-#endif
-    }
-
-    void fsqrt(char *& code_curr) const
-    {
-        // fsqrt
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xfa';
-#if defined PARSER_DEBUG_LOG
-        printf("fsqrt\n");
-#endif
-    }
-
-    void fptan(char *& code_curr) const
-    {
-        // fptan
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xf2';
-#if defined PARSER_DEBUG_LOG
-        printf("fptan\n");
-#endif
-    }
-
-    void fpatan(char *& code_curr) const
-    {
-        // fpatan
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xf3';
-#if defined PARSER_DEBUG_LOG
-        printf("fpatan\n");
-#endif
-    }
-
-    void fldl2e(char *& code_curr) const
-    {
-        // fldl2e
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xea';
-#if defined PARSER_DEBUG_LOG
-        printf("fldl2e\n");
-#endif
-    }
-
-    void fldl2t(char *& code_curr) const
-    {
-        // fldl2t
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xe9';
-#if defined PARSER_DEBUG_LOG
-        printf("fldl2t\n");
-#endif
-    }
-
-    void fabs(char *& code_curr) const
-    {
-        // fabs
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xe1';
-#if defined PARSER_DEBUG_LOG
-        printf("fabs\n");
-#endif
-    }
-
-    void fldln2(char *& code_curr) const
-    {
-        // fldln2
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xed';
-#if defined PARSER_DEBUG_LOG
-        printf("fldln2\n");
-#endif
-    }
-
-    void frndint(char *& code_curr) const
-    {
-        // frndint
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xfc';
-#if defined PARSER_DEBUG_LOG
-        printf("frndint\n");
-#endif
-    }
-
-    void fldi(char *& code_curr, int i) const
-    {
-        // fldi
-        *(code_curr++) = '\xd9';
-        *(code_curr++) = '\xc0' + i;
-#if defined PARSER_DEBUG_LOG
-        printf("fldi\t%d\n", i);
-#endif
-    }
-
 public:
 
     bool compile()
     {
         using namespace std;
         using namespace parser_internal;
+        using namespace parser_opcodes_generator;
 
         if(!is_parsed())
         {
@@ -1317,47 +1220,33 @@ public:
 #if defined PARSER_ARCH_X86 || defined PARSER_ARCH_X64
         // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
-        // Prolog
-//        // push    ebp
-//        *(curr++) = '\x55';
-//        pdbg("push\tebp");
-//        // mov     ebp, esp
-//        *(curr++) = '\x89';
-//        *(curr++) = '\xe5';
-//        pdbg("mov\tebp, esp");
-//        finit(curr);
-
         if((typeid(T) == typeid(float) && sizeof(float) == 4) || (typeid(T) == typeid(double) && sizeof(double) == 8))
         {
-//            char * last_push_pos = NULL;
-//            T * last_push_val = NULL;
+            char * last_push_pos = NULL;
+            T * last_push_val = NULL;
             for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 if(it->is_constant() || it->is_variable())
                 {
                     fld_ptr(curr, it->raw_value());
-//                    last_push_pos = curr;
-//                    last_push_val = jit_stack_curr;
+                    last_push_pos = curr;
+                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_operator())
                 {
                     jit_stack_curr -= 2;
-                    fld_ptr(curr, jit_stack_curr++);
-                    fld_ptr(curr, jit_stack_curr--);
-
-//                    jit_stack_curr -= 2;
-//                    if(last_push_val == jit_stack_curr + 1)
-//                    {
-//                        curr = last_push_pos;
-//                        fld_ptr(curr, jit_stack_curr);
-//                        fxch(curr);
-//                    }
-//                    else
-//                    {
-//                        fld_ptr(curr, jit_stack_curr++);
-//                        fld_ptr(curr, jit_stack_curr--);
-//                    }
+                    if(last_push_val == jit_stack_curr + 1)
+                    {
+                        curr = last_push_pos;
+                        fld_ptr(curr, jit_stack_curr);
+                        fxch(curr);
+                    }
+                    else
+                    {
+                        fld_ptr(curr, jit_stack_curr++);
+                        fld_ptr(curr, jit_stack_curr--);
+                    }
 
                     string op = it->str();
                     if     (op[0] == '+')
@@ -1391,19 +1280,17 @@ public:
                         return false;
                     }
 
-//                    last_push_pos = curr;
-//                    last_push_val = jit_stack_curr;
+                    last_push_pos = curr;
+                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_function())
                 {
-                    fld_ptr(curr, --jit_stack_curr);
-
-//                    jit_stack_curr--;
-//                    if(last_push_val == jit_stack_curr)
-//                        curr = last_push_pos;
-//                    else
-//                        fld_ptr(curr, jit_stack_curr);
+                    jit_stack_curr--;
+                    if(last_push_val == jit_stack_curr)
+                        curr = last_push_pos;
+                    else
+                        fld_ptr(curr, jit_stack_curr);
 
                     string fu = it->str();
                     if     (fu == "sin")
@@ -1425,8 +1312,8 @@ public:
                     else if(fu == "asin")
                     {
                         // arcsin(a) = arctg(a / sqrt(1 - a^2))
-                        fld_ptr(curr, jit_stack_curr);
-                        fld_ptr(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fldi(curr, 0);
                         fmul(curr);
                         fld1(curr);
                         fxch(curr);
@@ -1437,11 +1324,12 @@ public:
                     else if(fu == "acos")
                     {
                         // arccos(a) = 2 * arctg(sqrt(1 - a) / sqrt(1 + a))
+                        fldi(curr, 0);
                         fld1(curr);
                         fxch(curr);
                         fsub(curr);
                         fsqrt(curr);
-                        fld_ptr(curr, jit_stack_curr);
+                        fxch(curr);
                         fld1(curr);
                         fadd(curr);
                         fsqrt(curr);
@@ -1492,25 +1380,146 @@ public:
                         fxch(curr);
                         fstp_ptr(curr, jit_stack_curr);
                     }
+                    else if(fu == "sinh" || fu == "cosh")
+                    {
+                        // sinh(x) = (exp(x) - exp(-x)) / 2
+                        // cosh(x) = (exp(x) + exp(-x)) / 2
+                        fldi(curr, 0);
+                        // exp(x)
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr(curr, jit_stack_curr);
+                        // exp(-x)
+                        fxch(curr);
+                        fchs(curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr(curr, jit_stack_curr);
+                        // (exp(x) +- exp(-x)) / 2
+                        if(fu == "cosh")
+                            fadd(curr);
+                        else
+                            fsub(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fdiv(curr);
+                    }
+                    else if(fu == "tanh")
+                    {
+                        // tanh(x) = (exp(2*x) - 1) / (exp(2*x) + 1)
+                        // 2*x
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fmul(curr);
+                        // exp(2*x)
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr(curr, jit_stack_curr);
+                        // exp(2*x) - 1
+                        fldi(curr, 0);
+                        fld1(curr);
+                        fsub(curr);
+                        // exp(2*x) + 1
+                        fxch(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        // (exp(2*x) - 1) / (exp(2*x) + 1)
+                        fdiv(curr);
+                    }
+                    else if(fu == "asinh" || fu == "acosh")
+                    {
+                        // asinh(x) = log(x + sqrt(x * x + 1))
+                        // acosh(x) = log(x + sqrt(x * x - 1))
+                        fldi(curr, 0);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld1(curr);
+                        if(fu == "acosh")
+                            fsub(curr);
+                        else
+                            fadd(curr);
+                        fsqrt(curr);
+                        fadd(curr);
+                        // log(...)
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                        fldl2e(curr);
+                        fdiv(curr);
+                    }
+                    else if(fu == "atanh")
+                    {
+                        // 0.5 * log((1.0 + x) / (1.0 - x))
+                        fldi(curr, 0);
+                        fld1(curr);
+                        fadd(curr);
+                        fxch(curr);
+                        fld1(curr);
+                        fxch(curr);
+                        fsub(curr);
+                        fdiv(curr);
+                        // log(...)
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                        fldl2e(curr);
+                        fdiv(curr);
+                        // 0.5 * log(...)
+                        fld1(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fdiv(curr);
+                        fmul(curr);
+                    }
                     else
                     {
                         error_string = "Unsupported function " + it->str();
                         return false;
                     }
-                    // TODO: sinh cosh tanh asinh acosh atanh
-//                    last_push_pos = curr;
-//                    last_push_val = jit_stack_curr;
+                    last_push_pos = curr;
+                    last_push_val = jit_stack_curr;
                     fstp_ptr(curr, jit_stack_curr++);
                 }
             }
 
-            fld_ptr(curr, --jit_stack_curr);
-
-//            jit_stack_curr--;
-//            if(last_push_val == jit_stack_curr)
-//                curr = last_push_pos;
-//            else
-//                fld_ptr(curr, jit_stack_curr);
+            jit_stack_curr--;
+            if(last_push_val == jit_stack_curr)
+                curr = last_push_pos;
+            else
+                fld_ptr(curr, jit_stack_curr);
 
             fstp_ptr(curr, (T*)(& jit_result));
         }
@@ -1524,11 +1533,6 @@ public:
             return false;
         }
 
-        // Epilog
-//        finit(curr);
-//        // pop     ebp
-//        *(curr++) = '\x5d';
-//        pdbg("pop\tebp");
         ret(curr);
 
 #else

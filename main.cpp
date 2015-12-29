@@ -42,7 +42,8 @@ int main()
     //p.parse("2^3");
     //p.simplify();
     //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
-    p.parse("exp(log(sin(asin(0.8))))");
+    //p.parse("exp(log(cos(acos(0.8))))");
+    p.parse("atanh(-0.854)");
     p.set_const("x", 2);
     p.set_const("y", 2);
     p.set_const("z", 2);
@@ -52,7 +53,7 @@ int main()
     else
         cout << result << endl;
 
-    size_t exp_num = 100000000;
+    size_t exp_num = 10000;
     T sum = 0;
     long t = mtime();
     for(size_t i = 0; i < exp_num; i++)
