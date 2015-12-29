@@ -94,6 +94,7 @@ namespace parser_internal
     template<typename T> T pi_log10 (const T & arg) { return log10(arg); }
     template<typename T> T pi_exp   (const T & arg) { return exp(arg);   }
     template<typename T> T pi_sqrt  (const T & arg) { return sqrt(arg);  }
+    template<typename T> T pi_log2  (const T & arg) { return log(arg) / log((T)2); }
     template<typename T> complex<T> pi_abs   (const complex<T> & arg) { return abs(arg);          }
     template<typename T> complex<T> pi_asin  (const complex<T> & arg) { return asin(arg.real());  }
     template<typename T> complex<T> pi_acos  (const complex<T> & arg) { return acos(arg.real());  }
@@ -137,6 +138,7 @@ namespace parser_internal
         funcs_map["acosh"] = pi_acosh;
         funcs_map["atanh"] = pi_atanh;
         funcs_map["log"]   = pi_log;
+        funcs_map["log2"]  = pi_log2;
         funcs_map["log10"] = pi_log10;
         funcs_map["abs"]   = pi_abs;
         funcs_map["exp"]   = pi_exp;
@@ -286,8 +288,8 @@ protected:
     bool status;
     std::string error_string;
     bool is_compiled;
-    char * volatile jit_memory;
-    size_t jit_memory_size;
+    char * volatile jit_code;
+    size_t jit_code_size;
     volatile T jit_result;
     T * volatile jit_stack;
     size_t jit_stack_size;
@@ -329,8 +331,8 @@ protected:
         using namespace parser_internal;
         status = false;
         is_compiled = false;
-        jit_memory = NULL;
-        jit_memory_size = 0;
+        jit_code = NULL;
+        jit_code_size = 0;
         jit_stack = NULL;
         jit_stack_size = 0;
         init_functions(functions);
@@ -390,8 +392,8 @@ protected:
         status = other.status;
         error_string = other.error_string;
         is_compiled = false;
-        jit_memory = NULL;
-        jit_memory_size = 0;
+        jit_code = NULL;
+        jit_code_size = 0;
         jit_stack = NULL;
         jit_stack_size = 0;
     }
@@ -424,12 +426,12 @@ public:
 
     ~parser()
     {
-        if(jit_memory && jit_memory_size)
+        if(jit_code && jit_code_size)
         {
 #if defined _WIN32 || defined _WIN64
-            free(jit_memory);
+            free(jit_code);
 #else
-            munmap(jit_memory, jit_memory_size);
+            munmap(jit_code, jit_code_size);
 #endif
         }
         if(jit_stack && jit_stack_size)
@@ -874,7 +876,7 @@ public:
         if(is_compiled)
         {
             typedef void(* jit_f_type)();
-            jit_f_type func = reinterpret_cast<jit_f_type>(jit_memory);
+            jit_f_type func = reinterpret_cast<jit_f_type>(jit_code);
             func();
             result = jit_result;
             return true;
@@ -935,14 +937,314 @@ public:
 
     // =============================================================================================
 
+protected:
+
+    void finit(char *& code_curr) const
+    {
+        // finit
+        *(code_curr++) = '\xdb';
+        *(code_curr++) = '\xe3';
+#if defined PARSER_DEBUG_LOG
+        printf("finit\n");
+#endif
+    }
+
+    void ret(char *& code_curr) const
+    {
+        // ret
+        *(code_curr++) = '\xc3';
+#if defined PARSER_DEBUG_LOG
+        printf("ret\n");
+#endif
+    }
+
+    void fld_ptr(char *& code_curr, const T * ptr) const
+    {
+        // fld    dword ptr ds:[ptr]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x05';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+#if defined PARSER_DEBUG_LOG
+        printf("fld\tdword ptr ds:[%xh]\n", (size_t)ptr);
+#endif
+    }
+
+    void fstp_ptr(char *& code_curr, const T * ptr) const
+    {
+        // fstp    dword ptr ds:[ptr]
+        if(typeid(T) == typeid(float))
+            *(code_curr++) = '\xd9';
+        else
+            *(code_curr++) = '\xdd';
+        *(code_curr++) = '\x1d';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+#if defined PARSER_DEBUG_LOG
+        printf("fstp\tdword ptr ds:[%xh]\n", (size_t)ptr);
+#endif
+    }
+
+    template<typename U>
+    void fist_ptr(char *& code_curr, const U * ptr) const
+    {
+        // fist         [d]word ptr ds:[3C37E0h]
+        size_t sz = sizeof(U);
+        switch(sz)
+        {
+        case 4: // dword
+            *(code_curr++) = '\xdb';
+            break;
+        default: // word
+            *(code_curr++) = '\xdf';
+            break;
+        }
+        *(code_curr++) = '\x15';
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+#if defined PARSER_DEBUG_LOG
+        printf("fist\tdword ptr ds:[%xh]\n", (size_t)ptr);
+#endif
+    }
+
+    template<typename U>
+    void fild_ptr(char *& code_curr, const U * ptr) const
+    {
+        // fild         [dq]word ptr ds:[3C37E0h]
+        size_t sz = sizeof(U);
+        switch(sz)
+        {
+        case 8: // qword
+            *(code_curr++) = '\xdf';
+            *(code_curr++) = '\x2d';
+            break;
+        case 4: // dword
+            *(code_curr++) = '\xdb';
+            *(code_curr++) = '\x05';
+            break;
+        default: // word
+            *(code_curr++) = '\xdf';
+            *(code_curr++) = '\x05';
+            break;
+        }
+        const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+        memcpy(code_curr, & tmp_mem, sizeof(T*));
+        code_curr += sizeof(T*);
+#if defined PARSER_DEBUG_LOG
+        printf("fild\tdword ptr ds:[%xh]\n", (size_t)ptr);
+#endif
+    }
+
+    void fadd(char *& code_curr) const
+    {
+        // fadd
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xc1';
+#if defined PARSER_DEBUG_LOG
+        printf("fadd\n");
+#endif
+    }
+
+    void fsub(char *& code_curr) const
+    {
+        // fsub
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xe9';
+#if defined PARSER_DEBUG_LOG
+        printf("fsub\n");
+#endif
+    }
+
+    void fmul(char *& code_curr) const
+    {
+        // fmul
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xc9';
+#if defined PARSER_DEBUG_LOG
+        printf("fmul\n");
+#endif
+    }
+
+    void fdiv(char *& code_curr) const
+    {
+        // fdiv
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xf9';
+#if defined PARSER_DEBUG_LOG
+        printf("fdiv\n");
+#endif
+    }
+
+    void fyl2x(char *& code_curr) const
+    {
+        // fyl2x
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf1';
+#if defined PARSER_DEBUG_LOG
+        printf("fyl2x\n");
+#endif
+    }
+
+    void f2xm1(char *& code_curr) const
+    {
+        // f2xm1
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf0';
+#if defined PARSER_DEBUG_LOG
+        printf("f2xm1\n");
+#endif
+    }
+
+    void fld1(char *& code_curr) const
+    {
+        // fld1
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe8';
+#if defined PARSER_DEBUG_LOG
+        printf("fld1\n");
+#endif
+    }
+
+    void fxch(char *& code_curr) const
+    {
+        // fxch
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xc9';
+#if defined PARSER_DEBUG_LOG
+        printf("fxch\n");
+#endif
+    }
+
+    void fscale(char *& code_curr) const
+    {
+        // fscale
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfd';
+#if defined PARSER_DEBUG_LOG
+        printf("fscale\n");
+#endif
+    }
+
+    void fsin(char *& code_curr) const
+    {
+        // fsin
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfe';
+#if defined PARSER_DEBUG_LOG
+        printf("fsin\n");
+#endif
+    }
+
+    void fcos(char *& code_curr) const
+    {
+        // fcos
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xff';
+#if defined PARSER_DEBUG_LOG
+        printf("fcos\n");
+#endif
+    }
+
+    void fsqrt(char *& code_curr) const
+    {
+        // fsqrt
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfa';
+#if defined PARSER_DEBUG_LOG
+        printf("fsqrt\n");
+#endif
+    }
+
+    void fptan(char *& code_curr) const
+    {
+        // fptan
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf2';
+#if defined PARSER_DEBUG_LOG
+        printf("fptan\n");
+#endif
+    }
+
+    void fpatan(char *& code_curr) const
+    {
+        // fpatan
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf3';
+#if defined PARSER_DEBUG_LOG
+        printf("fpatan\n");
+#endif
+    }
+
+    void fldl2e(char *& code_curr) const
+    {
+        // fldl2e
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xea';
+#if defined PARSER_DEBUG_LOG
+        printf("fldl2e\n");
+#endif
+    }
+
+    void fldl2t(char *& code_curr) const
+    {
+        // fldl2t
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe9';
+#if defined PARSER_DEBUG_LOG
+        printf("fldl2t\n");
+#endif
+    }
+
+    void fabs(char *& code_curr) const
+    {
+        // fabs
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe1';
+#if defined PARSER_DEBUG_LOG
+        printf("fabs\n");
+#endif
+    }
+
+    void fldln2(char *& code_curr) const
+    {
+        // fldln2
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xed';
+#if defined PARSER_DEBUG_LOG
+        printf("fldln2\n");
+#endif
+    }
+
+    void frndint(char *& code_curr) const
+    {
+        // frndint
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfc';
+#if defined PARSER_DEBUG_LOG
+        printf("frndint\n");
+#endif
+    }
+
+    void fldi(char *& code_curr, int i) const
+    {
+        // fldi
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xc0' + i;
+#if defined PARSER_DEBUG_LOG
+        printf("fldi\t%d\n", i);
+#endif
+    }
+
+public:
+
     bool compile()
     {
-#if defined PARSER_DEBUG_LOG
-#define pdbg(s) cout << (s) << endl
-#else
-#define pdbg(s) (void)(s)
-#endif
-
         using namespace std;
         using namespace parser_internal;
 
@@ -952,18 +1254,18 @@ public:
             return false;
         }
 
-        if(!jit_memory || !jit_memory_size)
+        if(!jit_code || !jit_code_size)
         {
-            jit_memory_size = 128 * 1024; // 128 KiB
+            jit_code_size = 128 * 1024; // 128 KiB
 #if defined _WIN32 || defined _WIN64
-            jit_memory = (char *)malloc(jit_memory_size);
+            jit_code = (char *)malloc(jit_code_size);
             DWORD tmp;
-            VirtualProtect(jit_memory, jit_memory_size, PAGE_EXECUTE_READWRITE, &tmp);
+            VirtualProtect(jit_code, jit_code_size, PAGE_EXECUTE_READWRITE, &tmp);
 #else
-            jit_memory = mmap(NULL, jit_memory_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            jit_code = mmap(NULL, jit_code_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
         }
-        memset(jit_memory, 0, jit_memory_size);
+        memset(jit_code, 0, jit_code_size);
 
         if(!jit_stack || !jit_stack_size)
         {
@@ -971,11 +1273,11 @@ public:
             jit_stack = new T [jit_stack_size];
         }
 
-        char * curr = jit_memory;
-        char * free_mem = jit_memory + jit_memory_size - 1 - sizeof(T);
+        char * curr = jit_code;
+        T * jit_stack_curr = jit_stack;
 
 #if defined PARSER_ARCH_X86
-        pdbg("# Codegen: x86");
+        // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
         // Prolog
 //        // push    ebp
@@ -985,45 +1287,48 @@ public:
 //        *(curr++) = '\x89';
 //        *(curr++) = '\xe5';
 //        pdbg("mov\tebp, esp");
-//        // finit
-//        *(curr++) = '\xdb';
-//        *(curr++) = '\xe3';
-//        pdbg("finit");
-/*
-        if(typeid(T) == typeid(float) && sizeof(float) == 4)
+//        finit(curr);
+
+        if((typeid(T) == typeid(float) && sizeof(float) == 4) || (typeid(T) == typeid(double) && sizeof(double) == 8))
         {
-            pdbg("# Type: float");
             for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 if(it->is_constant() || it->is_variable())
                 {
-                    const T * val = it->raw_value();
-                    // push    imm32
-                    *(curr++) = '\x68';
-                    memcpy(curr, & val, sizeof(T*));
-                    curr += sizeof(T*);
-                    pdbg(string("push\timm32") + string("\t# ") + it->str());
+                    fld_ptr(curr, it->raw_value());
+                    fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_operator())
                 {
-                    // fld dword ptr [esp]
-                    *(curr++) = '\xd9'; // double - dd
-                    *(curr++) = '\x04';
-                    *(curr++) = '\x24';
-                    pdbg("fld\tdword ptr [esp]");
-                    // add    esp, 4
-                    *(curr++) = '\x83';
-                    *(curr++) = '\xc4';
-                    *(curr++) = '\x04';
-                    pdbg("add\tesp, 4");
+                    jit_stack_curr -= 2;
+                    fld_ptr(curr, jit_stack_curr++);
+                    fld_ptr(curr, jit_stack_curr--);
 
-                    if(it->str()[0] == '+')
+                    string op = it->str();
+                    if     (op[0] == '+')
+                        fadd(curr);
+                    else if(op[0] == '-')
+                        fsub(curr);
+                    else if(op[0] == '*')
+                        fmul(curr);
+                    else if(op[0] == '/')
+                        fdiv(curr);
+                    else if(op[0] == '^')
                     {
-                        // fadd    dword ptr [esp]
-                        *(curr++) = '\xd8'; // double - dc
-                        *(curr++) = '\x04';
-                        *(curr++) = '\x24';
-                        pdbg("fadd\tdword ptr [esp]");
+                        fxch(curr);
+                        // https://stackoverflow.com/questions/4638473/how-to-powreal-real-in-x86
+                        fyl2x(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr(curr, jit_stack_curr);
                     }
                     else
                     {
@@ -1031,223 +1336,124 @@ public:
                         return false;
                     }
 
-                    // add    esp, 4
-                    *(curr++) = '\x83';
-                    *(curr++) = '\xc4';
-                    *(curr++) = '\x04';
-                    pdbg("add\tesp, 4");
-
-                    // push    imm32
-                    *(curr++) = '\x68';
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    free_mem -= sizeof(T);
-                    pdbg(string("push\timm32") + string("\t# free_mem"));
-
-                    // fstp    dword ptr [esp]
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x1c';
-                    *(curr++) = '\x24';
-                    pdbg("fstp    dword ptr [esp]");
+                    fstp_ptr(curr, jit_stack_curr++);
                 }
                 else if(it->is_function())
                 {
-
-                }
-            }
-
-            // fld dword ptr [esp]
-            *(curr++) = '\xd9'; // double - dd
-            *(curr++) = '\x04';
-            *(curr++) = '\x24';
-            pdbg("fld\tdword ptr [esp]");
-            // add    esp, 4
-            *(curr++) = '\x83';
-            *(curr++) = '\xc4';
-            *(curr++) = '\x04';
-            pdbg("add\tesp, 4");
-            // fstp    imm32
-            *(curr++) = '\xd9';
-            *(curr++) = '\x15';
-            free_mem = (char *)(& jit_result);
-            memcpy(curr, & free_mem, sizeof(T*));
-            curr += sizeof(T*);
-            pdbg(string("fstp\timm32") + string("\t# result"));
-        }
-*/
-        /*
-        jit_result = 42;
-        // pi
-        *(curr++) = '\xd9';
-        *(curr++) = '\xeb';
-        // push    imm32
-        *(curr++) = '\x68';
-        free_mem = (char *)(& jit_result);
-        memcpy(curr, & free_mem, sizeof(T*));
-        curr += sizeof(T*);
-        // fstp
-        *(curr++) = '\xd9';
-        *(curr++) = '\x1c';
-        *(curr++) = '\x24';
-        // fld dword ptr [esp]
-//        *(curr++) = '\xd9'; // double - dd
-//        *(curr++) = '\x04';
-//        *(curr++) = '\x24';
-        // add    esp, 4
-        *(curr++) = '\x83';
-        *(curr++) = '\xc4';
-        *(curr++) = '\x04';
-        // unload
-//        *(curr++) = '\xd9';
-//        *(curr++) = '\x15';
-//        free_mem = (char *)(& jit_result);
-//        memcpy(curr, & free_mem, sizeof(T*));
-//        curr += sizeof(T*);
-*/
-/*
-        jit_result = 42;
-        // pi
-//        *(curr++) = '\xd9';
-//        *(curr++) = '\xeb';
-        // push    imm32
-//        *(curr++) = '\x68';
-//        free_mem = (char *)(& jit_result);
-//        memcpy(curr, & free_mem, sizeof(T*));
-//        curr += sizeof(T*);
-
-        T * a = new T;
-        *a = 100;
-        *(curr++) = '\xd9';
-        *(curr++) = '\x05';
-        free_mem = (char *)(a);
-        memcpy(curr, & free_mem, sizeof(T*));
-        curr += sizeof(T*);
-
-        // fstp
-//        *(curr++) = '\xd9';
-//        *(curr++) = '\x1c';
-//        *(curr++) = '\x24';
-        // fld dword ptr [esp]
-//        *(curr++) = '\xd9'; // double - dd
-//        *(curr++) = '\x04';
-//        *(curr++) = '\x24';
-        // add    esp, 4
-//        *(curr++) = '\x83';
-//        *(curr++) = '\xc4';
-//        *(curr++) = '\x04';
-        // unload
-        *(curr++) = '\xd9';
-        *(curr++) = '\x15';
-        free_mem = (char *)(& jit_result);
-        memcpy(curr, & free_mem, sizeof(T*));
-        curr += sizeof(T*);
-*/
-        T * jit_stack_curr = jit_stack;
-
-        if(typeid(T) == typeid(float) && sizeof(float) == 4)
-        {
-            pdbg("# Type: float");
-            for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
-            {
-                if(it->is_constant() || it->is_variable())
-                {
-                    const T * val = it->raw_value();
-                    // fld    imm32
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x05';
-                    free_mem = (char *)(val);
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    pdbg(string("fld\timm32") + string("\t# ") + it->str() + string(" -> FPU"));
-
-                    // fstp    imm32
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x15';
-                    free_mem = (char *)(jit_stack_curr);
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    jit_stack_curr++;
-                    pdbg(string("fstp\timm32") + string("\t# FPU -> jit_stack"));
-                }
-                else if(it->is_operator())
-                {
-                    // fld    imm32
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x05';
-                    jit_stack_curr--;
-                    free_mem = (char *)(jit_stack_curr);
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
-
-                    // fld    imm32
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x05';
-                    jit_stack_curr--;
-                    free_mem = (char *)(jit_stack_curr);
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
-
-                    if(it->str()[0] == '+')
+                    fld_ptr(curr, --jit_stack_curr);
+                    string fu = it->str();
+                    if     (fu == "sin")
+                        fsin(curr);
+                    else if(fu == "cos")
+                        fcos(curr);
+                    else if(fu == "sqrt")
+                        fsqrt(curr);
+                    else if(fu == "tan")
                     {
-                        // fadd
-                        *(curr++) = '\xde';
-                        *(curr++) = '\xc1';
-                        pdbg("fadd");
+                        fptan(curr);
+                        fdiv(curr);
+                    }
+                    else if(fu == "atan")
+                    {
+                        fld1(curr);
+                        fpatan(curr);
+                    }
+                    else if(fu == "asin")
+                    {
+                        // arcsin(a) = arctg(a / sqrt(1 - a^2))
+                        fld_ptr(curr, jit_stack_curr);
+                        fld_ptr(curr, jit_stack_curr);
+                        fmul(curr);
+                        fld1(curr);
+                        fxch(curr);
+                        fsub(curr);
+                        fsqrt(curr);
+                        fpatan(curr);
+                    }
+                    else if(fu == "acos")
+                    {
+                        // arccos(a) = 2 * arctg(sqrt(1 - a) / sqrt(1 + a))
+                        fld1(curr);
+                        fxch(curr);
+                        fsub(curr);
+                        fsqrt(curr);
+                        fld_ptr(curr, jit_stack_curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fsqrt(curr);
+                        fpatan(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fmul(curr);
+                    }
+                    else if(fu == "log")
+                    {
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                        fldl2e(curr);
+                        fdiv(curr);
+                    }
+                    else if(fu == "log2")
+                    {
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                    }
+                    else if(fu == "log10")
+                    {
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                        fldl2t(curr);
+                        fdiv(curr);
+                    }
+                    else if(fu == "abs")
+                        fabs(curr);
+                    else if(fu == "exp")
+                    {
+                        // http://mathforum.org/kb/message.jspa?messageID=1640026
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr(curr, jit_stack_curr);
                     }
                     else
                     {
-                        error_string = "Unsupported operator " + it->str();
+                        error_string = "Unsupported function " + it->str();
                         return false;
                     }
-
-                    // fstp    imm32
-                    *(curr++) = '\xd9';
-                    *(curr++) = '\x15';
-                    free_mem = (char *)(jit_stack_curr);
-                    memcpy(curr, & free_mem, sizeof(T*));
-                    curr += sizeof(T*);
-                    jit_stack_curr++;
-                    pdbg(string("fstp\timm32") + string("\t# FPU -> jit_stack"));
-                }
-                else if(it->is_function())
-                {
-
+                    // TODO: sinh cosh tanh asinh acosh atanh
+                    fstp_ptr(curr, jit_stack_curr++);
                 }
             }
 
-            // fld    imm32
-            *(curr++) = '\xd9';
-            *(curr++) = '\x05';
-            jit_stack_curr--;
-            free_mem = (char *)(jit_stack_curr);
-            memcpy(curr, & free_mem, sizeof(T*));
-            curr += sizeof(T*);
-            pdbg(string("fld\timm32") + string("\t# jit_stack -> FPU"));
-
-            // fstp    imm32
-            *(curr++) = '\xd9';
-            *(curr++) = '\x15';
-            free_mem = (char *)(& jit_result);
-            memcpy(curr, & free_mem, sizeof(T*));
-            curr += sizeof(T*);
-            pdbg(string("fstp\timm32") + string("\t# FPU -> result"));
+            fld_ptr(curr, --jit_stack_curr);
+            fstp_ptr(curr, (T*)(& jit_result));
         }
 
         // Epilog
+//        finit(curr);
 //        // pop     ebp
 //        *(curr++) = '\x5d';
 //        pdbg("pop\tebp");
-        // ret
-        *(curr++) = '\xc3';
-        pdbg("ret");
+        ret(curr);
+
 #else
         error_string = "Unsupported arch!";
         return false;
 #endif
 
-#undef pdbg
         is_compiled = true;
         return true;
     }
