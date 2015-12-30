@@ -1,4 +1,4 @@
-#ifndef PARSER_H
+#if !defined PARSER_H
 #define PARSER_H
 
 #include <map>
@@ -17,6 +17,25 @@
 #include <limits>
 #include <cctype>
 
+#if (defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+     defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+     defined(__i486__) || defined(__i586__) || defined(__i686__))
+#define PARSER_JIT_X86
+#endif
+
+#if (defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+     defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+#define PARSER_JIT_X64
+#endif
+
+#if !defined PARSER_JIT_X86 && !defined PARSER_JIT_X64
+#define PARSER_JIT_DISABLE
+#endif
+
+//#define PARSER_ASM_DEBUG
+//#define PARSER_JIT_DISABLE
+
+#if !defined PARSER_JIT_DISABLE
 #if defined _WIN32 || defined _WIN64
 #if !defined NOMINMAX
 #define NOMINMAX
@@ -25,19 +44,14 @@
 #else
 #include <sys/mman.h>
 #endif
-
-#if (defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
-     defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
-     defined(__i486__) || defined(__i586__) || defined(__i686__))
-#define PARSER_ARCH_X86
+#if defined _MSC_VER
+#define PARSER_JIT_CALL __cdecl
+#elif defined __GNUC__
+#define PARSER_JIT_CALL __attribute__((__cdecl__))
+#else
+#define PARSER_JIT_CALL
 #endif
-
-#if (defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
-     defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
-#define PARSER_ARCH_X64
 #endif
-
-//#define PARSER_ASM_DEBUG
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 namespace std
@@ -276,6 +290,8 @@ namespace parser_internal
 // =================================================================================================
 // =================================================================================================
 
+#if !defined PARSER_JIT_DISABLE
+
 // Internal parser's functions for opcode generation
 namespace parser_opcodes_generator
 {
@@ -307,7 +323,7 @@ namespace parser_opcodes_generator
     template<typename T>
     void fld_ptr(char *& code_curr, const T * ptr)
     {
-#if defined PARSER_ARCH_X86
+#if defined PARSER_JIT_X86
         // fld    [dq]word ptr ds:[ptr]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';
@@ -318,7 +334,7 @@ namespace parser_opcodes_generator
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
         debug_asm_output("fld\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
-#elif defined PARSER_ARCH_X64
+#elif defined PARSER_JIT_X64
         // mov    rdx, 0aaaaaaaaaaaaaaah
         *(code_curr++) = '\x48';
         *(code_curr++) = '\xba';
@@ -339,7 +355,7 @@ namespace parser_opcodes_generator
     template<typename T>
     void fstp_ptr(char *& code_curr, const T * ptr)
     {
-#if defined PARSER_ARCH_X86
+#if defined PARSER_JIT_X86
         // fstp    [dq]word ptr ds:[ptr]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';
@@ -350,7 +366,7 @@ namespace parser_opcodes_generator
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
         debug_asm_output("fstp\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
-#elif defined PARSER_ARCH_X64
+#elif defined PARSER_JIT_X64
         // mov    rdx, 0aaaaaaaaaaaaaaah
         *(code_curr++) = '\x48';
         *(code_curr++) = '\xba';
@@ -380,6 +396,13 @@ namespace parser_opcodes_generator
         *(code_curr++) = '\xde';
         *(code_curr++) = '\xe9';
         debug_asm_output("fsub\n");
+    }
+
+    inline void fsubr(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xe1';
+        debug_asm_output("fsubr\n");
     }
 
     inline void fmul(char *& code_curr)
@@ -516,6 +539,8 @@ namespace parser_opcodes_generator
     }
 }
 
+#endif // !defined PARSER_JIT_DISABLE
+
 // =================================================================================================
 // =================================================================================================
 // =================================================================================================
@@ -532,11 +557,12 @@ protected:
     bool status;
     std::string error_string;
     bool is_compiled;
+#if !defined PARSER_JIT_DISABLE
     char * volatile jit_code;
     size_t jit_code_size;
-    volatile T jit_result;
     T * volatile jit_stack;
     size_t jit_stack_size;
+#endif
 
     // =============================================================================================
 
@@ -575,10 +601,12 @@ protected:
         using namespace parser_internal;
         status = false;
         is_compiled = false;
+#if !defined PARSER_JIT_DISABLE
         jit_code = NULL;
         jit_code_size = 0;
         jit_stack = NULL;
         jit_stack_size = 0;
+#endif
         init_functions(functions);
         init_operators(operators);
         init_constants(constants);
@@ -636,10 +664,12 @@ protected:
         status = other.status;
         error_string = other.error_string;
         is_compiled = false;
+#if !defined PARSER_JIT_DISABLE
         jit_code = NULL;
         jit_code_size = 0;
         jit_stack = NULL;
         jit_stack_size = 0;
+#endif
     }
 
     // =============================================================================================
@@ -670,6 +700,7 @@ public:
 
     ~parser()
     {
+#if !defined PARSER_JIT_DISABLE
         if(jit_code && jit_code_size)
         {
 #if defined _WIN32 || defined _WIN64
@@ -682,6 +713,7 @@ public:
         {
             delete [] jit_stack;
         }
+#endif
     }
 
     // =============================================================================================
@@ -1117,14 +1149,16 @@ public:
             return false;
         }
 
+#if !defined PARSER_JIT_DISABLE
         if(is_compiled)
         {
-            typedef void(* jit_f_type)();
+            typedef void(PARSER_JIT_CALL * jit_f_type)();
             jit_f_type func = reinterpret_cast<jit_f_type>(jit_code);
             func();
-            result = jit_result;
+            result = jit_stack[0];
             return true;
         }
+#endif
 
         //stack<T> st;
         simple_stack<T> st;
@@ -1181,10 +1215,9 @@ public:
 
     // =============================================================================================
 
-public:
-
     bool compile()
     {
+#if !defined PARSER_JIT_DISABLE
         using namespace std;
         using namespace parser_internal;
         using namespace parser_opcodes_generator;
@@ -1217,7 +1250,7 @@ public:
         char * curr = jit_code;
         T * jit_stack_curr = jit_stack;
 
-#if defined PARSER_ARCH_X86 || defined PARSER_ARCH_X64
+#if defined PARSER_JIT_X86 || defined PARSER_JIT_X64
         // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
         if((typeid(T) == typeid(float) && sizeof(float) == 4) || (typeid(T) == typeid(double) && sizeof(double) == 8))
@@ -1316,8 +1349,7 @@ public:
                         fldi(curr, 0);
                         fmul(curr);
                         fld1(curr);
-                        fxch(curr);
-                        fsub(curr);
+                        fsubr(curr);
                         fsqrt(curr);
                         fpatan(curr);
                     }
@@ -1326,8 +1358,7 @@ public:
                         // arccos(a) = 2 * arctg(sqrt(1 - a) / sqrt(1 + a))
                         fldi(curr, 0);
                         fld1(curr);
-                        fxch(curr);
-                        fsub(curr);
+                        fsubr(curr);
                         fsqrt(curr);
                         fxch(curr);
                         fld1(curr);
@@ -1487,8 +1518,7 @@ public:
                         fadd(curr);
                         fxch(curr);
                         fld1(curr);
-                        fxch(curr);
-                        fsub(curr);
+                        fsubr(curr);
                         fdiv(curr);
                         // log(...)
                         fld1(curr);
@@ -1516,12 +1546,6 @@ public:
             }
 
             jit_stack_curr--;
-            if(last_push_val == jit_stack_curr)
-                curr = last_push_pos;
-            else
-                fld_ptr(curr, jit_stack_curr);
-
-            fstp_ptr(curr, (T*)(& jit_result));
         }
         else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) || (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
         {
@@ -1540,8 +1564,20 @@ public:
         return false;
 #endif
 
+        if(jit_stack_curr != jit_stack)
+        {
+            stringstream sst;
+            sst << "Stack size equal " << (size_t)(jit_stack_curr - jit_stack);
+            error_string = sst.str();
+            return false;
+        }
+
         is_compiled = true;
         return true;
+#else
+        error_string = "JIT is disabled!";
+        return false;
+#endif
     }
 
     // =============================================================================================
