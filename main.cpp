@@ -27,14 +27,14 @@ int main()
 
     T result = 42;
     parser<T> p;
-    //p.parse("exp(x)");
+    p.parse("sqrt(x)");
     //p.parse("2^3");
     //p.parse("(x*y)+(x/y)-(x*x/y)");
     //p.parse("x+y");
     //p.parse("2-(2+(5*3+2))");
     //p.parse("2^3");
     //p.simplify();
-    p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
+    //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
     //p.parse("exp(log(cos(acos(0.8))))");
     //p.parse("atanh(-0.854)");
     p.set_const("x", complex<double>(2,3));
@@ -87,7 +87,8 @@ int main()
     {
         T result;
         T x = 2, z = 2;
-        result = exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z));
+        //result = exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z));
+        result = sqrt(x);
         //T x = complex<double>(2,3), y = complex<double>(4,5);
         //result = (x*y)+(x/y)-(x*x/y);
         sum += result;

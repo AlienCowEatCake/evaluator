@@ -324,6 +324,13 @@ namespace parser_opcodes_generator
         debug_asm_output("fchs\n");
     }
 
+    inline void fxtract(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf4';
+        debug_asm_output("fxtract\n");
+    }
+
     // =============================================================================================
 
     template<typename T>
