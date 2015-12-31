@@ -25,7 +25,9 @@ bool parser<T>::compile()
         DWORD tmp;
         VirtualProtect(jit_code, jit_code_size, PAGE_EXECUTE_READWRITE, &tmp);
 #else
-        jit_code = mmap(NULL, jit_code_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        int prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+        int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+        jit_code = (char *)mmap(NULL, jit_code_size, prot, flags, -1, 0);
 #endif
     }
     memset(jit_code, 0, jit_code_size);
@@ -41,11 +43,13 @@ bool parser<T>::compile()
 
 #if defined PARSER_JIT_X86 || defined PARSER_JIT_X64
 
-    if((typeid(T) == typeid(float) && sizeof(float) == 4) || (typeid(T) == typeid(double) && sizeof(double) == 8))
+    if((typeid(T) == typeid(float) && sizeof(float) == 4) ||
+       (typeid(T) == typeid(double) && sizeof(double) == 8))
     {
         char * last_push_pos = NULL;
         T * last_push_val = NULL;
-        for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+        for(typename vector<parser_object<T> >::const_iterator
+            it = expression_objects.begin(); it != expression_objects.end(); ++it)
         {
             if(it->is_constant() || it->is_variable())
             {
@@ -366,9 +370,11 @@ bool parser<T>::compile()
 
         jit_stack_curr--;
     }
-    else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) || (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
+    else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) ||
+            (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
     {
-        for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+        for(typename vector<parser_object<T> >::const_iterator
+            it = expression_objects.begin(); it != expression_objects.end(); ++it)
         {
             if(it->is_constant() || it->is_variable())
             {

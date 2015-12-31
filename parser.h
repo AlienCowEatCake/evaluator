@@ -132,7 +132,8 @@ protected:
             }
             else
             {
-                typename map<char, pair<unsigned short int, T(*)(const T &, const T &)> >::const_iterator ito = operators.find((*it)[0]);
+                typename map<char, pair<unsigned short int, T(*)(const T &, const T &)> >::const_iterator
+                        ito = operators.find((*it)[0]);
                 if(ito != operators.end())
                 {
                     expression_objects.push_back(parser_object<T>(*it, ito->second.second));
@@ -242,7 +243,8 @@ public:
         constants.clear();
         init_constants(constants);
         if(is_parsed())
-            for(typename vector<parser_object<T> >::iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            for(typename vector<parser_object<T> >::iterator
+                it = expression_objects.begin(); it != expression_objects.end(); ++it)
                 constants[it->str()].value() = incorrect_number(T());
     }
 
@@ -262,7 +264,7 @@ public:
 
         expression.clear();
         expression_objects.clear();
-        error_string = "";
+        error_string.clear();
 
         status = true;
         bool str_begin = true;
@@ -485,7 +487,8 @@ public:
             deque<parser_object<T> > dq;
             was_changed = false;
 
-            for(typename vector<parser_object<T> >::iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            for(typename vector<parser_object<T> >::iterator
+                it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 if(it->is_operator())
                 {
@@ -560,7 +563,8 @@ public:
                 dq.clear();
             }
 
-            for(typename vector<parser_object<T> >::iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            for(typename vector<parser_object<T> >::iterator
+                it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 if(it->is_operator())
                 {
@@ -666,7 +670,8 @@ public:
         //stack<T> st;
         simple_stack<T> st;
 
-        for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+        for(typename vector<parser_object<T> >::const_iterator
+            it = expression_objects.begin(); it != expression_objects.end(); ++it)
         {
             if(it->is_constant())
             {
@@ -730,7 +735,8 @@ public:
             for(vector<string>::const_iterator it = expression.begin(); it != expression.end(); ++it)
                 cout << * it << ' ';
         else
-            for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            for(typename vector<parser_object<T> >::const_iterator
+                it = expression_objects.begin(); it != expression_objects.end(); ++it)
             {
                 cout << it->str();
                 if(it->is_variable())

@@ -30,7 +30,7 @@
 #endif
 #if defined _MSC_VER
 #define PARSER_JIT_CALL __cdecl
-#elif defined __GNUC__
+#elif defined __GNUC__ && defined PARSER_JIT_X86
 #define PARSER_JIT_CALL __attribute__((__cdecl__))
 #else
 #define PARSER_JIT_CALL
