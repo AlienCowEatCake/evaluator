@@ -33,19 +33,23 @@ int main()
     cout << q[10].pointer() << endl;
     */
 
-    typedef double T;
+    //typedef double T;
+    typedef complex<double> T;
 
     T result = 42;
     parser<T> p;
+    p.parse("sin(x)");
+    //p.parse("2^3");
+    //p.parse("(x*y)+(x/y)-(x*x/y)");
     //p.parse("x+y");
-    p.parse("2-(2+(5*3+2))");
+    //p.parse("2-(2+(5*3+2))");
     //p.parse("2^3");
     //p.simplify();
     //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
     //p.parse("exp(log(cos(acos(0.8))))");
     //p.parse("atanh(-0.854)");
-    p.set_const("x", 2);
-    p.set_const("y", 2);
+    p.set_const("x", complex<double>(2,3));
+    p.set_const("y", complex<double>(4,5));
     p.set_const("z", 2);
 
     if(!p.calculate(result))
@@ -53,7 +57,7 @@ int main()
     else
         cout << result << endl;
 
-    size_t exp_num = 100000000;
+    size_t exp_num = 10000000;
     T sum = 0;
     long t = mtime();
     for(size_t i = 0; i < exp_num; i++)
@@ -95,6 +99,8 @@ int main()
         T result;
         T x = 2, z = 2;
         result = exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z));
+        //T x = complex<double>(2,3), y = complex<double>(4,5);
+        //result = (x*y)+(x/y)-(x*x/y);
         sum += result;
     }
     t = mtime() - t;

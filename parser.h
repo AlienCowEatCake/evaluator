@@ -53,21 +53,6 @@
 #endif
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER < 1800
-namespace std
-{
-    // http://functions.wolfram.com/ElementaryFunctions/ArcCosh/02/
-    template<typename T>
-    T acosh(T x) { return log(x + sqrt(x * x - 1)); }
-    // http://functions.wolfram.com/ElementaryFunctions/ArcSinh/02/
-    template<typename T>
-    T asinh(T x) { return log(x + sqrt(x * x + 1)); }
-    // http://functions.wolfram.com/ElementaryFunctions/ArcTanh/02/
-    template<typename T>
-    T atanh(T x) { return  0.5 * log((1.0 + x) / (1.0 - x)); }
-}
-#endif
-
 // =================================================================================================
 // =================================================================================================
 // =================================================================================================
@@ -97,38 +82,44 @@ namespace parser_internal
 
     // =============================================================================================
 
+    // http://functions.wolfram.com/ElementaryFunctions/ArcCosh/02/
+    // http://functions.wolfram.com/ElementaryFunctions/ArcSinh/02/
+    // http://functions.wolfram.com/ElementaryFunctions/ArcTanh/02/
+    // http://functions.wolfram.com/ElementaryFunctions/ArcSin/02/
+    // http://functions.wolfram.com/ElementaryFunctions/ArcCos/02/
+    // http://functions.wolfram.com/ElementaryFunctions/ArcTan/02/
+
     // All fultions (must NOT be inline).
-    template<typename T> T pi_sin   (const T & arg) { return sin(arg);   }
-    template<typename T> T pi_cos   (const T & arg) { return cos(arg);   }
-    template<typename T> T pi_tan   (const T & arg) { return tan(arg);   }
-    template<typename T> T pi_sinh  (const T & arg) { return sinh(arg);  }
-    template<typename T> T pi_cosh  (const T & arg) { return cosh(arg);  }
-    template<typename T> T pi_tanh  (const T & arg) { return tanh(arg);  }
-    template<typename T> T pi_log   (const T & arg) { return log(arg);   }
-    template<typename T> T pi_log10 (const T & arg) { return log10(arg); }
-    template<typename T> T pi_exp   (const T & arg) { return exp(arg);   }
-    template<typename T> T pi_sqrt  (const T & arg) { return sqrt(arg);  }
-    template<typename T> T pi_log2  (const T & arg) { return log(arg) / log((T)2); }
-    template<typename T> complex<T> pi_abs   (const complex<T> & arg) { return abs(arg);          }
-    template<typename T> complex<T> pi_asin  (const complex<T> & arg) { return asin(arg.real());  }
-    template<typename T> complex<T> pi_acos  (const complex<T> & arg) { return acos(arg.real());  }
-    template<typename T> complex<T> pi_atan  (const complex<T> & arg) { return atan(arg.real());  }
-    template<typename T> complex<T> pi_asinh (const complex<T> & arg) { return asinh(arg.real()); }
-    template<typename T> complex<T> pi_acosh (const complex<T> & arg) { return acosh(arg.real()); }
-    template<typename T> complex<T> pi_atanh (const complex<T> & arg) { return atanh(arg.real()); }
-    template<typename T> complex<T> pi_imag  (const complex<T> & arg) { return arg.imag();        }
-    template<typename T> complex<T> pi_real  (const complex<T> & arg) { return arg.real();        }
-    template<typename T> complex<T> pi_conj  (const complex<T> & arg) { return conj(arg);         }
-    template<typename T> T pi_abs   (const T & arg) { return fabs(arg);  }
-    template<typename T> T pi_asin  (const T & arg) { return asin(arg);  }
-    template<typename T> T pi_acos  (const T & arg) { return acos(arg);  }
-    template<typename T> T pi_atan  (const T & arg) { return atan(arg);  }
-    template<typename T> T pi_asinh (const T & arg) { return asinh(arg); }
-    template<typename T> T pi_acosh (const T & arg) { return acosh(arg); }
-    template<typename T> T pi_atanh (const T & arg) { return atanh(arg); }
-    template<typename T> T pi_imag  (const T & arg) { return arg * (T)0; }
-    template<typename T> T pi_real  (const T & arg) { return arg;        }
-    template<typename T> T pi_conj  (const T & arg) { return arg;        }
+    template<typename T> T pi_sin   (const T & ar) { return sin(ar); }
+    template<typename T> T pi_cos   (const T & ar) { return cos(ar); }
+    template<typename T> T pi_tan   (const T & ar) { return tan(ar); }
+    template<typename T> T pi_sinh  (const T & ar) { return sinh(ar); }
+    template<typename T> T pi_cosh  (const T & ar) { return cosh(ar); }
+    template<typename T> T pi_tanh  (const T & ar) { return tanh(ar); }
+    template<typename T> T pi_log   (const T & ar) { return log(ar); }
+    template<typename T> T pi_log10 (const T & ar) { return log10(ar); }
+    template<typename T> T pi_exp   (const T & ar) { return exp(ar); }
+    template<typename T> T pi_sqrt  (const T & ar) { return sqrt(ar); }
+    template<typename T> T pi_log2  (const T & ar) { return log(ar) / log((T)2); }
+    template<typename T> T pi_asinh (const T & ar) { return log(ar + sqrt(ar * ar + (T)1)); }
+    template<typename T> T pi_acosh (const T & ar) { return log(ar + sqrt(ar * ar - (T)1)); }
+    template<typename T> T pi_atanh (const T & ar) { return (T)0.5 * log(((T)1 + ar) / ((T)1 - ar)); }
+    template<typename T> complex<T> pi_abs   (const complex<T> & ar) { return abs(ar); }
+    template<typename T> complex<T> pi_asin  (const complex<T> & ar) { return - complex<T>(0, 1) * log(complex<T>(0, 1) * ar + sqrt((T)1 - ar * ar)); }
+    template<typename T> complex<T> pi_acos  (const complex<T> & ar) { return (T)3.14159265358979323846264338327950 / (T)2 - pi_asin(ar); }
+    template<typename T> complex<T> pi_atan  (const complex<T> & ar) { return complex<T>(0, 0.5) * (log((T)1 - complex<T>(0, 1) * ar) - log(complex<T>(0, 1) * ar + (T)1)); }
+    template<typename T> complex<T> pi_imag  (const complex<T> & ar) { return ar.imag(); }
+    template<typename T> complex<T> pi_real  (const complex<T> & ar) { return ar.real(); }
+    template<typename T> complex<T> pi_conj  (const complex<T> & ar) { return conj(ar); }
+    template<typename T> complex<T> pi_arg   (const complex<T> & ar) { return arg(ar); }
+    template<typename T> T pi_abs   (const T & ar) { return fabs(ar); }
+    template<typename T> T pi_asin  (const T & ar) { return asin(ar); }
+    template<typename T> T pi_acos  (const T & ar) { return acos(ar); }
+    template<typename T> T pi_atan  (const T & ar) { return atan(ar); }
+    template<typename T> T pi_imag  (const T & ar) { return ar * (T)0; }
+    template<typename T> T pi_real  (const T & ar) { return ar; }
+    template<typename T> T pi_conj  (const T & ar) { return ar; }
+    template<typename T> T pi_arg   (const T & ar) { return arg(complex<T>(ar)); }
 
     // =============================================================================================
 
@@ -139,6 +130,7 @@ namespace parser_internal
         funcs_map["imag"]  = pi_imag;
         funcs_map["real"]  = pi_real;
         funcs_map["conj"]  = pi_conj;
+        funcs_map["arg"]   = pi_arg;
         funcs_map["sin"]   = pi_sin;
         funcs_map["cos"]   = pi_cos;
         funcs_map["tan"]   = pi_tan;
@@ -307,6 +299,8 @@ namespace parser_opcodes_generator
 #endif
     }
 
+    // =============================================================================================
+
     inline void finit(char *& code_curr)
     {
         *(code_curr++) = '\xdb';
@@ -419,6 +413,13 @@ namespace parser_opcodes_generator
         debug_asm_output("fdiv\n");
     }
 
+    inline void fdivr(char *& code_curr)
+    {
+        *(code_curr++) = '\xde';
+        *(code_curr++) = '\xf1';
+        debug_asm_output("fdivr\n");
+    }
+
     inline void fyl2x(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -440,11 +441,32 @@ namespace parser_opcodes_generator
         debug_asm_output("fld1\n");
     }
 
+    inline void fldpi(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xeb';
+        debug_asm_output("fldpi\n");
+    }
+
+    inline void fldz(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xee';
+        debug_asm_output("fldz\n");
+    }
+
     inline void fxch(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
         *(code_curr++) = '\xc9';
         debug_asm_output("fxch\n");
+    }
+
+    inline void fxch(char *& code_curr, int i)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xc8' + i;
+        debug_asm_output("fxch\t%d\n", i);
     }
 
     inline void fscale(char *& code_curr)
@@ -466,6 +488,13 @@ namespace parser_opcodes_generator
         *(code_curr++) = '\xd9';
         *(code_curr++) = '\xff';
         debug_asm_output("fcos\n");
+    }
+
+    inline void fsincos(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xfb';
+        debug_asm_output("fsincos\n");
     }
 
     inline void fsqrt(char *& code_curr)
@@ -537,6 +566,64 @@ namespace parser_opcodes_generator
         *(code_curr++) = '\xe0';
         debug_asm_output("fchs\n");
     }
+
+    // =============================================================================================
+
+    template<typename T>
+    inline void fld_ptr_real(char *& code_curr, const std::complex<T> * ptr)
+    {
+        const T * arr = reinterpret_cast<const T *>(ptr);
+        fld_ptr(code_curr, &(arr[0]));
+    }
+
+    template<typename T>
+    inline void fld_ptr_imag(char *& code_curr, const std::complex<T> * ptr)
+    {
+        const T * arr = reinterpret_cast<const T *>(ptr);
+        fld_ptr(code_curr, &(arr[1]));
+    }
+
+    template<typename T>
+    inline void fstp_ptr_real(char *& code_curr, const std::complex<T> * ptr)
+    {
+        const T * arr = reinterpret_cast<const T *>(ptr);
+        fstp_ptr(code_curr, &(arr[0]));
+    }
+
+    template<typename T>
+    inline void fstp_ptr_imag(char *& code_curr, const std::complex<T> * ptr)
+    {
+        const T * arr = reinterpret_cast<const T *>(ptr);
+        fstp_ptr(code_curr, &(arr[1]));
+    }
+
+    template<typename T>
+    inline void fld_ptr_real(char *& code_curr, const T * ptr)
+    {
+        (void)code_curr;
+        (void)ptr;
+    }
+
+    template<typename T>
+    inline void fld_ptr_imag(char *& code_curr, const T * ptr)
+    {
+        (void)code_curr;
+        (void)ptr;
+    }
+
+    template<typename T>
+    inline void fstp_ptr_real(char *& code_curr, const T * ptr)
+    {
+        (void)code_curr;
+        (void)ptr;
+    }
+
+    template<typename T>
+    inline void fstp_ptr_imag(char *& code_curr, const T * ptr)
+    {
+        (void)code_curr;
+        (void)ptr;
+    }
 }
 
 #endif // !defined PARSER_JIT_DISABLE
@@ -600,8 +687,8 @@ protected:
         using namespace std;
         using namespace parser_internal;
         status = false;
-        is_compiled = false;
 #if !defined PARSER_JIT_DISABLE
+        is_compiled = false;
         jit_code = NULL;
         jit_code_size = 0;
         jit_stack = NULL;
@@ -1534,7 +1621,38 @@ public:
                         fdiv(curr);
                         fmul(curr);
                     }
-                    else
+                    else if(fu == "imag")
+                    {
+                        fldz(curr);
+                        fmul(curr);
+                    }
+                    else if(fu == "arg")
+                    {
+                        // 0 if x > 0; pi if x < 0
+                        fldi(curr, 0);
+                        fldi(curr, 0);
+                        fabs(curr);
+                        fsub(curr);
+                        fxch(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fmul(curr);
+                        fdiv(curr);
+                        fldpi(curr);
+                        fmul(curr);
+                        // arg(x + iy) = 2*atan((sqrt(x^2 + y^2) - x) / y) if y != 0
+                        // fldi(curr, 0);
+                        // fabs(curr);
+                        // fsubr(curr);
+                        // fldz(curr);
+                        // fpatan(curr);
+                        // fld1(curr);
+                        // fld1(curr);
+                        // fadd(curr);
+                        // fmul(curr);
+                    }
+                    else if(fu != "real" && fu != "conj")
                     {
                         error_string = "Unsupported function " + it->str();
                         return false;
@@ -1549,7 +1667,579 @@ public:
         }
         else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) || (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
         {
+            for(typename vector<parser_object<T> >::const_iterator it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            {
+                if(it->is_constant() || it->is_variable())
+                {
+                    fld_ptr_real(curr, it->raw_value());
+                    fstp_ptr_real(curr, jit_stack_curr);
+                    fld_ptr_imag(curr, it->raw_value());
+                    fstp_ptr_imag(curr, jit_stack_curr++);
+                }
+                else if(it->is_operator())
+                {
+                    string op = it->str();
+                    jit_stack_curr -= 2;
+                    if(op[0] == '+' || op[0] == '-')
+                    {
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        if(op[0] == '+')
+                            fadd(curr);
+                        else
+                            fsub(curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        if(op[0] == '+')
+                            fadd(curr);
+                        else
+                            fsub(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(op[0] == '*')
+                    {
+                        // (a+bi)*(c+di) = (ac-bd)+(bc+ad)i
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fsub(curr);
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fadd(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    else if(op[0] == '/')
+                    {
+                        // (a+bi)/(c+di) = (ac+bd)/(c^2+d^2)+(bc-ad)i/(c^2+d^2)
+                        // (c^2+d^2)
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fadd(curr);
+                        fldi(curr, 0);
+                        // ac+bd
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fadd(curr);
+                        // (ac+bd)/(c^2+d^2)
+                        fdivr(curr);
+                        fxch(curr);
+                        // bc-ad
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fsub(curr);
+                        // (bc-ad)i/(c^2+d^2)
+                        fdivr(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    else if(op[0] == '^')
+                    {
+                        // pow(a, z) = r * cos(theta) + (r * sin(theta)) * I;
+                        // r = pow(Abs(a), Re(z)) * exp(-Im(z) * Arg(a));
+                        // theta = Re(z) * Arg(a) + Im(z) * log(Abs(a));
+                        //
+                        // Abs(a)
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fadd(curr);
+                        fsqrt(curr);
+                        fldi(curr, 0);
+                        fstp_ptr_real(curr, jit_stack_curr + 3); // temp store for Abs(a)
+                        //
+                        // Arg(a)
+                        // arg(x + iy) = 2*atan((sqrt(x^2 + y^2) - x) / y) if y != 0
+                        // TODO: Hmm... Does it work if y == 0?
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fsub(curr);
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fpatan(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr + 3); // temp store for Arg(a)
+                        //
+                        // log(Abs(a))
+                        fld_ptr_real(curr, jit_stack_curr + 3);
+                        fld1(curr);
+                        fxch(curr);
+                        fyl2x(curr);
+                        fldl2e(curr);
+                        fdiv(curr);
+                        //
+                        // theta = Re(z) * Arg(a) + Im(z) * log(Abs(a));
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fmul(curr);
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fld_ptr_imag(curr, jit_stack_curr + 3);
+                        fmul(curr);
+                        fadd(curr);
+                        fstp_ptr_real(curr, jit_stack_curr + 4); // temp store for theta
+                        //
+                        // pow(Abs(a), Re(z))
+                        fld_ptr_real(curr, jit_stack_curr + 1);
+                        fld_ptr_real(curr, jit_stack_curr + 3);
+                        fyl2x(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, jit_stack_curr + 2); // garbage
+                        fstp_ptr_imag(curr, jit_stack_curr + 4); // temp store for pow
+                        //
+                        // exp(-Im(z) * Arg(a));
+                        fld_ptr_imag(curr, jit_stack_curr + 3);
+                        fld_ptr_imag(curr, jit_stack_curr + 1);
+                        fchs(curr);
+                        fmul(curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, jit_stack_curr + 2); // garbage
+                        //
+                        // r = pow(Abs(a), Re(z)) * exp(-Im(z) * Arg(a));
+                        fld_ptr_imag(curr, jit_stack_curr + 4);
+                        fmul(curr);
+                        //
+                        // pow(a, z) = r * cos(theta) + (r * sin(theta)) * I;
+                        fld_ptr_real(curr, jit_stack_curr + 4);
+                        fsincos(curr);
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else
+                    {
+                        error_string = "Unsupported operator " + it->str();
+                        return false;
+                    }
+                    jit_stack_curr++;
+                }
+                else if(it->is_function())
+                {
+                    string fu = it->str();
+                    jit_stack_curr--;
+                    if(fu == "real")
+                    {
+                        fldz(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(fu == "imag")
+                    {
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fldz(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    else if(fu == "conj")
+                    {
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fchs(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(fu == "arg")
+                    {
+                        // arg(x + iy) = 2*atan((sqrt(x^2 + y^2) - x) / y) if y != 0
+                        // TODO: Hmm... Does it work if y == 0?
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fadd(curr);
+                        fsqrt(curr);
+                        fsubr(curr);
+                        fxch(curr);
+                        fpatan(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fmul(curr);
+                        fldz(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    else if(fu == "abs")
+                    {
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fadd(curr);
+                        fsqrt(curr);
+                        fldz(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    else if(fu == "exp")
+                    {
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        //
+                        // exp(Re(z))
+                        fld_ptr_real(curr, jit_stack_curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, jit_stack_curr + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_imag(curr, jit_stack_curr);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(fu == "sin")
+                    {
+                        T * px = jit_stack_curr;
+                        T * tmp = jit_stack_curr + 1;
+                        // sin(x) = (exp(ix) - exp(-ix)) / 2i
+                        //
+                        // exp(ix)
+                        fld_ptr_imag(curr, px);
+                        fchs(curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp);
+                        //
+                        // exp(-ix)
+                        fld_ptr_imag(curr, px);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fchs(curr);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp + 1);
+                        //
+                        // exp(ix) - exp(-ix)
+                        fld_ptr_real(curr, tmp);
+                        fld_ptr_real(curr, tmp + 1);
+                        fsub(curr);
+                        fstp_ptr_real(curr, tmp);
+                        fld_ptr_imag(curr, tmp);
+                        fld_ptr_imag(curr, tmp + 1);
+                        fsub(curr);
+                        fstp_ptr_imag(curr, tmp);
+                        //
+                        // sin(x) = (exp(ix) - exp(-ix)) / 2i
+                        // (a+bi) / 2i = (b-ia) * 0.5 = 0.5b - 0.5a
+                        fld1(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fdiv(curr);
+                        fldi(curr, 0);
+                        fld_ptr_imag(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_real(curr, tmp);
+                        fmul(curr);
+                        fchs(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(fu == "cos")
+                    {
+                        T * px = jit_stack_curr;
+                        T * tmp = jit_stack_curr + 1;
+                        // cos(x) = (exp(ix) + exp(-ix)) / 2
+                        //
+                        // exp(ix)
+                        fld_ptr_imag(curr, px);
+                        fchs(curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp);
+                        //
+                        // exp(-ix)
+                        fld_ptr_imag(curr, px);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fchs(curr);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp + 1);
+                        //
+                        // exp(ix) + exp(-ix)
+                        fld_ptr_real(curr, tmp);
+                        fld_ptr_real(curr, tmp + 1);
+                        fadd(curr);
+                        fstp_ptr_real(curr, tmp);
+                        fld_ptr_imag(curr, tmp);
+                        fld_ptr_imag(curr, tmp + 1);
+                        fadd(curr);
+                        fstp_ptr_imag(curr, tmp);
+                        //
+                        // cos(x) = (exp(ix) + exp(-ix)) * 0.5
+                        // (a+bi)*(c) = ac+bci
+                        fld1(curr);
+                        fld1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fdiv(curr);
+                        fldi(curr, 0);
+                        fld_ptr_real(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                        fld_ptr_imag(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                    }
+                    else if(fu == "tan")
+                    {
+                        T * px = jit_stack_curr;
+                        T * tmp = jit_stack_curr + 1;
+                        // tan(x) = (exp(ix) - exp(-ix)) / (i * (exp(ix) + exp(-ix)))
+                        //
+                        // exp(ix)
+                        fld_ptr_imag(curr, px);
+                        fchs(curr);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp);
+                        //
+                        // exp(-ix)
+                        fld_ptr_imag(curr, px);
+                        fldl2e(curr);
+                        fmul(curr);
+                        fldi(curr, 0);
+                        frndint(curr);
+                        fxch(curr);
+                        fldi(curr, 1);
+                        fsub(curr);
+                        f2xm1(curr);
+                        fld1(curr);
+                        fadd(curr);
+                        fscale(curr);
+                        fxch(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        // cos(Im(z)), sin(Im(z))
+                        fld_ptr_real(curr, px);
+                        fchs(curr);
+                        fsincos(curr);
+                        // exp(z) = exp(Re(z)) * cos(Im(z)) + exp(Re(z)) * sin(Im(z)) * I;
+                        fldi(curr, 2);
+                        fmul(curr);
+                        fstp_ptr_real(curr, tmp + 1);
+                        fmul(curr);
+                        fstp_ptr_imag(curr, tmp + 1);
+                        //
+                        // exp(ix) - exp(-ix)
+                        fld_ptr_real(curr, tmp);
+                        fld_ptr_real(curr, tmp + 1);
+                        fsub(curr);
+                        fstp_ptr_real(curr, tmp + 2);
+                        fld_ptr_imag(curr, tmp);
+                        fld_ptr_imag(curr, tmp + 1);
+                        fsub(curr);
+                        fstp_ptr_imag(curr, tmp + 2);
+                        //
+                        // i * (exp(ix) + exp(-ix))
+                        fld_ptr_real(curr, tmp);
+                        fld_ptr_real(curr, tmp + 1);
+                        fadd(curr);
+                        fstp_ptr_imag(curr, tmp + 3);
+                        fld_ptr_imag(curr, tmp);
+                        fld_ptr_imag(curr, tmp + 1);
+                        fadd(curr);
+                        fchs(curr);
+                        fstp_ptr_real(curr, tmp + 3);
+                        //
+                        // tan(x) = (exp(ix) - exp(-ix)) / (i * (exp(ix) + exp(-ix)))
+                        // (a+bi)/(c+di) = (ac+bd)/(c^2+d^2)+(bc-ad)i/(c^2+d^2)
+                        // (c^2+d^2)
+                        fld_ptr_real(curr, tmp + 3);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fld_ptr_imag(curr, tmp + 3);
+                        fldi(curr, 0);
+                        fmul(curr);
+                        fadd(curr);
+                        fldi(curr, 0);
+                        // ac+bd
+                        fld_ptr_real(curr, tmp + 2);
+                        fld_ptr_real(curr, tmp + 3);
+                        fmul(curr);
+                        fld_ptr_imag(curr, tmp + 2);
+                        fld_ptr_imag(curr, tmp + 3);
+                        fmul(curr);
+                        fadd(curr);
+                        // (ac+bd)/(c^2+d^2)
+                        fdivr(curr);
+                        fxch(curr);
+                        // bc-ad
+                        fld_ptr_imag(curr, tmp + 2);
+                        fld_ptr_real(curr, tmp + 3);
+                        fmul(curr);
+                        fld_ptr_real(curr, tmp + 2);
+                        fld_ptr_imag(curr, tmp + 3);
+                        fmul(curr);
+                        fsub(curr);
+                        // (bc-ad)i/(c^2+d^2)
+                        fdivr(curr);
+                        fstp_ptr_imag(curr, jit_stack_curr);
+                        fstp_ptr_real(curr, jit_stack_curr);
+                    }
+                    // TODO: asin acos atan sinh cosh tanh asinh acosh atanh log log2 log10 sqrt
+                    else
+                    {
+                        error_string = "Unsupported function " + it->str();
+                        return false;
+                    }
+                    jit_stack_curr++;
+                }
+            }
 
+            jit_stack_curr--;
         }
         else
         {
