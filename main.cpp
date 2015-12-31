@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include "parser.h"
+#include "parser_compiler.h"
 
 #if defined _WIN32
 #include <windows.h>
@@ -22,30 +22,19 @@ using namespace std;
 
 int main()
 {
-    /*
-    map<int, parser_internal::var_container<double> > q;
-    q[10] = 1;
-    cout << q[10].pointer() << endl;
-    q[11] = 1;
-    q[12] = 1;
-    q[13] = 1;
-    q[10].value() = 1;
-    cout << q[10].pointer() << endl;
-    */
-
     //typedef double T;
     typedef complex<double> T;
 
     T result = 42;
     parser<T> p;
-    p.parse("sin(x)");
+    //p.parse("exp(x)");
     //p.parse("2^3");
     //p.parse("(x*y)+(x/y)-(x*x/y)");
     //p.parse("x+y");
     //p.parse("2-(2+(5*3+2))");
     //p.parse("2^3");
     //p.simplify();
-    //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
+    p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
     //p.parse("exp(log(cos(acos(0.8))))");
     //p.parse("atanh(-0.854)");
     p.set_const("x", complex<double>(2,3));
@@ -57,7 +46,7 @@ int main()
     else
         cout << result << endl;
 
-    size_t exp_num = 10000000;
+    size_t exp_num = 100000000;
     T sum = 0;
     long t = mtime();
     for(size_t i = 0; i < exp_num; i++)

@@ -6,4 +6,8 @@ CONFIG += warn_all
 
 SOURCES += main.cpp
 
-HEADERS += parser.h
+HEADERS += parser.h \
+    parser_operations.h \
+    parser_internal.h \
+    parser_opcodes.h \
+    parser_compiler.h
