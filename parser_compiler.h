@@ -49,7 +49,7 @@ bool parser<T>::compile()
         char * last_push_pos = NULL;
         T * last_push_val = NULL;
         for(typename vector<parser_object<T> >::const_iterator
-            it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            it = expression.begin(); it != expression.end(); ++it)
         {
             if(it->is_constant() || it->is_variable())
             {
@@ -375,7 +375,7 @@ bool parser<T>::compile()
             (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
     {
         for(typename vector<parser_object<T> >::const_iterator
-            it = expression_objects.begin(); it != expression_objects.end(); ++it)
+            it = expression.begin(); it != expression.end(); ++it)
         {
             if(it->is_constant() || it->is_variable())
             {

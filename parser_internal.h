@@ -2,6 +2,8 @@
 #define PARSER_INTERNAL_H
 
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 // Internal parser's classes & functions
 namespace parser_internal
@@ -169,6 +171,36 @@ namespace parser_internal
     protected:
         size_t top_place;
         T data[max_size];
+    };
+
+    // =============================================================================================
+
+    class parser_table_record
+    {
+    public:
+        vector<string> Terminals;
+        int Jump;
+        bool Accept;
+        bool Stack;
+        bool Return;
+        bool Error;
+        inline void set_values(const string & T, int J, bool A, bool S, bool R, bool E)
+        {
+            Jump = J;
+            Accept = A;
+            Stack = S;
+            Return = R;
+            Error = E;
+
+            size_t beg = 0, end = T.find_first_of(" \t\r\n");
+            while(end != string::npos)
+            {
+                Terminals.push_back(T.substr(beg, end - beg));
+                beg = end + 1;
+                end = T.find_first_of(" \t\r\n", beg);
+            }
+            Terminals.push_back(T.substr(beg));
+        }
     };
 
     // =============================================================================================

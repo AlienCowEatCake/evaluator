@@ -254,16 +254,16 @@ namespace parser_internal
 
     // Init default constant values.
     template<typename T>
-    void init_constants(map<string, var_container<T> > & consts_map)
+    void init_variables(map<string, var_container<T> > & vars_map)
     {
-        consts_map["pi"].value() = static_cast<T>(3.14159265358979323846264338327950);
-        consts_map["e"].value()  = static_cast<T>(2.71828182845904523536028747135266);
+        vars_map["pi"].value() = static_cast<T>(3.14159265358979323846264338327950);
+        vars_map["e"].value()  = static_cast<T>(2.71828182845904523536028747135266);
         if(typeid(T) == typeid(complex<float>) ||
            typeid(T) == typeid(complex<double>) ||
            typeid(T) == typeid(complex<long double>))
         {
-            consts_map["i"].value() = sqrt(static_cast<T>(-1.0));
-            consts_map["j"].value() = sqrt(static_cast<T>(-1.0));
+            vars_map["i"].value() = sqrt(static_cast<T>(-1.0));
+            vars_map["j"].value() = sqrt(static_cast<T>(-1.0));
         }
     }
 

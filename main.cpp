@@ -27,7 +27,17 @@ int main()
 
     T result = 42;
     parser<T> p;
-    p.parse("sqrt(x)");
+    //if(!p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))"))
+    if(!p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))"))
+    {
+        cout << p.get_error() << endl;
+#if defined _WIN32
+        system("pause");
+#endif
+        return 1;
+    }
+
+    //p.parse("sqrt(x)");
     //p.parse("2^3");
     //p.parse("(x*y)+(x/y)-(x*x/y)");
     //p.parse("x+y");
@@ -37,9 +47,15 @@ int main()
     //p.parse("exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))");
     //p.parse("exp(log(cos(acos(0.8))))");
     //p.parse("atanh(-0.854)");
-    p.set_const("x", complex<double>(2,3));
-    p.set_const("y", complex<double>(4,5));
-    p.set_const("z", 2);
+
+    T x = complex<double>(2,3);
+    T z = 2;
+    p.set_var("x", complex<double>(2,3));
+    p.set_var("y", complex<double>(4,5));
+    p.set_var("z", 2);
+
+    p.debug_print();
+    cout << exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z)) << endl;
 
     if(!p.calculate(result))
         cout << p.get_error() << endl;
