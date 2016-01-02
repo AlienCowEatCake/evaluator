@@ -40,7 +40,7 @@
 #if !defined PARSER_JIT_DISABLE
 
 // Internal parser's functions for opcode generation
-namespace parser_opcodes_generator
+namespace parser_opcodes
 {
     inline void debug_asm_output(const char * fmt, ...)
     {

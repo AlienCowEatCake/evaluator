@@ -112,6 +112,14 @@ namespace parser_internal
         {
             return (type == PI_OBJ_VARIABLE ? var_value : (& value));
         }
+        inline T(* raw_oper() const)(const T &, const T &)
+        {
+            return oper;
+        }
+        inline T(* raw_func() const)(const T &)
+        {
+            return func;
+        }
         inline T eval() const
         {
             return (type == PI_OBJ_VARIABLE ? (* var_value) : value);

@@ -45,6 +45,7 @@
 #include "parser_internal.h"
 #include "parser_operations.h"
 #include "parser_opcodes.h"
+#include "parser_templates.h"
 
 // =================================================================================================
 
@@ -900,7 +901,13 @@ public:
 
     // =============================================================================================
 
-    bool compile();
+    bool compile_inline();
+    bool compile_extcall();
+
+    inline bool compile()
+    {
+        return compile_extcall();
+    }
 
     // =============================================================================================
 
@@ -921,6 +928,7 @@ public:
     }
 };
 
-#include "parser_compiler.h"
+#include "parser_compiler_inline.h"
+#include "parser_compiler_extcall.h"
 
 #endif // PARSER_H
