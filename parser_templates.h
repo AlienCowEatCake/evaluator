@@ -415,6 +415,11 @@ namespace parser_templates
                 tc = reinterpret_cast<const char *>(func);
             }
 #endif
+            if(!tc)
+            {
+                status = false;
+                return;
+            }
             while(tc[0] == '\xe9') // jump
             {
                 size_t offset;
@@ -792,6 +797,11 @@ namespace parser_templates
                 tc = reinterpret_cast<const char *>(func);
             }
 #endif
+            if(!tc)
+            {
+                status = false;
+                return;
+            }
             while(tc[0] == '\xe9') // jump
             {
                 size_t offset;

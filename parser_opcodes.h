@@ -70,6 +70,7 @@ namespace parser_opcodes
 
     // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
+    // initialize 87
     inline void finit(char *& code_curr)
     {
         *(code_curr++) = '\xdb';
@@ -83,6 +84,7 @@ namespace parser_opcodes
         debug_asm_output("ret\n");
     }
 
+    // push, 0 := mem
     template<typename T>
     void fld_ptr(char *& code_curr, const T * ptr)
     {
@@ -116,6 +118,7 @@ namespace parser_opcodes
 #endif
     }
 
+    // mem := 0, pop
     template<typename T>
     void fstp_ptr(char *& code_curr, const T * ptr)
     {
@@ -148,6 +151,7 @@ namespace parser_opcodes
 #endif
     }
 
+    // 1 := 1 + 0, pop
     inline void fadd(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -155,6 +159,7 @@ namespace parser_opcodes
         debug_asm_output("fadd\n");
     }
 
+    // 1 := 1 - 0, pop
     inline void fsub(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -162,6 +167,7 @@ namespace parser_opcodes
         debug_asm_output("fsub\n");
     }
 
+    // 1 := 0 - 1, pop
     inline void fsubr(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -169,6 +175,7 @@ namespace parser_opcodes
         debug_asm_output("fsubr\n");
     }
 
+    // 1 := 1 * 0, pop
     inline void fmul(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -176,6 +183,7 @@ namespace parser_opcodes
         debug_asm_output("fmul\n");
     }
 
+    // 1 := 1 / 0, pop
     inline void fdiv(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -183,6 +191,7 @@ namespace parser_opcodes
         debug_asm_output("fdiv\n");
     }
 
+    // 1 := 0 / 1, pop
     inline void fdivr(char *& code_curr)
     {
         *(code_curr++) = '\xde';
@@ -190,6 +199,7 @@ namespace parser_opcodes
         debug_asm_output("fdivr\n");
     }
 
+    // 0 := 1 * log base 2.0 of 0, pop
     inline void fyl2x(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -197,6 +207,7 @@ namespace parser_opcodes
         debug_asm_output("fyl2x\n");
     }
 
+    // 0 := (2.0 ** 0) - 1.0
     inline void f2xm1(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -204,6 +215,7 @@ namespace parser_opcodes
         debug_asm_output("f2xm1\n");
     }
 
+    // push, 0 := 1.0
     inline void fld1(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -211,6 +223,7 @@ namespace parser_opcodes
         debug_asm_output("fld1\n");
     }
 
+    // push, 0 := Pi
     inline void fldpi(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -218,6 +231,7 @@ namespace parser_opcodes
         debug_asm_output("fldpi\n");
     }
 
+    // push, 0 := +0.0
     inline void fldz(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -225,6 +239,7 @@ namespace parser_opcodes
         debug_asm_output("fldz\n");
     }
 
+    // exchange 0 and 1
     inline void fxch(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -232,6 +247,7 @@ namespace parser_opcodes
         debug_asm_output("fxch\n");
     }
 
+    // exchange 0 and i
     inline void fxch(char *& code_curr, int i)
     {
         *(code_curr++) = '\xd9';
@@ -239,6 +255,7 @@ namespace parser_opcodes
         debug_asm_output("fxch\t%d\n", i);
     }
 
+    // 0 := 0 * 2.0 ** 1
     inline void fscale(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -246,6 +263,7 @@ namespace parser_opcodes
         debug_asm_output("fscale\n");
     }
 
+    // 387 only: push, 1/0 := sine(old 0)
     inline void fsin(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -253,6 +271,7 @@ namespace parser_opcodes
         debug_asm_output("fsin\n");
     }
 
+    // 387 only: push, 1/0 := cosine(old 0)
     inline void fcos(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -260,6 +279,7 @@ namespace parser_opcodes
         debug_asm_output("fcos\n");
     }
 
+    // 387 only: push, 1 := sine, 0 := cos(old 0)
     inline void fsincos(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -267,6 +287,7 @@ namespace parser_opcodes
         debug_asm_output("fsincos\n");
     }
 
+    // 0 := square root of 0
     inline void fsqrt(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -274,6 +295,7 @@ namespace parser_opcodes
         debug_asm_output("fsqrt\n");
     }
 
+    // push, 1/0 := tan(old 0)
     inline void fptan(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -281,6 +303,7 @@ namespace parser_opcodes
         debug_asm_output("fptan\n");
     }
 
+    // 0 := arctan(1/0), pop
     inline void fpatan(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -288,6 +311,7 @@ namespace parser_opcodes
         debug_asm_output("fpatan\n");
     }
 
+    // push, 0 := log base 2.0 of e
     inline void fldl2e(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -295,6 +319,7 @@ namespace parser_opcodes
         debug_asm_output("fldl2e\n");
     }
 
+    // push, 0 := log base 2.0 of 10.0
     inline void fldl2t(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -302,6 +327,7 @@ namespace parser_opcodes
         debug_asm_output("fldl2t\n");
     }
 
+    // 0 := |0|
     inline void fabs(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -309,6 +335,7 @@ namespace parser_opcodes
         debug_asm_output("fabs\n");
     }
 
+    // push, 0 := log base e of 2.0
     inline void fldln2(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -316,6 +343,7 @@ namespace parser_opcodes
         debug_asm_output("fldln2\n");
     }
 
+    // 0 := round(0)
     inline void frndint(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -323,6 +351,7 @@ namespace parser_opcodes
         debug_asm_output("frndint\n");
     }
 
+    // push, 0 := old i
     inline void fldi(char *& code_curr, int i)
     {
         *(code_curr++) = '\xd9';
@@ -330,6 +359,15 @@ namespace parser_opcodes
         debug_asm_output("fldi\t%d\n", i);
     }
 
+    // i := 0, pop
+    inline void fstpi(char *& code_curr, int i)
+    {
+        *(code_curr++) = '\xdd';
+        *(code_curr++) = '\xd8' + i;
+        debug_asm_output("fstpi\t%d\n", i);
+    }
+
+    // 0 := -0
     inline void fchs(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
@@ -337,11 +375,269 @@ namespace parser_opcodes
         debug_asm_output("fchs\n");
     }
 
+    // push, 1 := expo, 0 := sig
     inline void fxtract(char *& code_curr)
     {
         *(code_curr++) = '\xd9';
         *(code_curr++) = '\xf4';
         debug_asm_output("fxtract\n");
+    }
+
+    // compare 0 - 0.0
+    inline void ftst(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xe4';
+        debug_asm_output("ftst\n");
+    }
+
+    // AX := status word
+    inline void fstsw_ax(char *& code_curr)
+    {
+        *(code_curr++) = '\xdf';
+        *(code_curr++) = '\xe0';
+        debug_asm_output("fstsw\tax\n");
+    }
+
+    // Store AH into flags SF ZF xx AF xx PF xx CF
+    inline void sahf(char *& code_curr)
+    {
+        *(code_curr++) = '\x9e';
+        debug_asm_output("sahf\n");
+    }
+
+    // compare 0 - 1, pop
+    inline void fcomp(char *& code_curr)
+    {
+        *(code_curr++) = '\xd8';
+        *(code_curr++) = '\xd9';
+        debug_asm_output("fcomp\n");
+    }
+
+    // Set CF to 1
+    inline void stc(char *& code_curr)
+    {
+        *(code_curr++) = '\xf9';
+        debug_asm_output("stc\n");
+    }
+
+    // 1-byte jump if ==
+    inline void jz(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+            if(diff > 127)
+                debug_asm_output("; Error: jump size is %lu\n", (unsigned long)diff);
+            *(code_curr++) = '\x74';
+            memcpy(code_curr, & diff, 1);
+            code_curr++;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 2;
+            debug_asm_output("jz\t%s\n", label_text);
+        }
+    }
+
+    // 4-byte jump if ==
+    inline void jz_long(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 6;
+            *(code_curr++) = '\x0f';
+            *(code_curr++) = '\x84';
+            memcpy(code_curr, & diff, 4);
+            code_curr += 4;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 6;
+            debug_asm_output("jz\t%s\n", label_text);
+        }
+    }
+
+    // 1-byte jump if <
+    inline void ja(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+            if(diff > 127)
+                debug_asm_output("; Error: jump size is %lu\n", (unsigned long)diff);
+            *(code_curr++) = '\x77';
+            memcpy(code_curr, & diff, 1);
+            code_curr++;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 2;
+            debug_asm_output("ja\t%s\n", label_text);
+        }
+    }
+
+    // 4-byte jump if <
+    inline void ja_long(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 6;
+            *(code_curr++) = '\x0f';
+            *(code_curr++) = '\x87';
+            memcpy(code_curr, & diff, 4);
+            code_curr += 4;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 6;
+            debug_asm_output("ja\t%s\n", label_text);
+        }
+    }
+
+    // 1-byte jump if >
+    inline void jb(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+            if(diff > 127)
+                debug_asm_output("; Error: jump size is %lu\n", (unsigned long)diff);
+            *(code_curr++) = '\x72';
+            memcpy(code_curr, & diff, 1);
+            code_curr++;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 2;
+            debug_asm_output("jb\t%s\n", label_text);
+        }
+    }
+
+    // 4-byte jump if >
+    inline void jb_long(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 6;
+            *(code_curr++) = '\x0f';
+            *(code_curr++) = '\x82';
+            memcpy(code_curr, & diff, 4);
+            code_curr += 4;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 6;
+            debug_asm_output("jb\t%s\n", label_text);
+        }
+    }
+
+    // 1-byte jump if !=
+    inline void jnz(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+            if(diff > 127)
+                debug_asm_output("; Error: jump size is %lu\n", (unsigned long)diff);
+            *(code_curr++) = '\x75';
+            memcpy(code_curr, & diff, 1);
+            code_curr++;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 2;
+            debug_asm_output("jnz\t%s\n", label_text);
+        }
+    }
+
+    // 4-byte jump if !=
+    inline void jnz_long(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 6;
+            *(code_curr++) = '\x0f';
+            *(code_curr++) = '\x85';
+            memcpy(code_curr, & diff, 4);
+            code_curr += 4;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 6;
+            debug_asm_output("jnz\t%s\n", label_text);
+        }
+    }
+
+    // 1-byte jump
+    inline void jmp(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+            if(diff > 127)
+                debug_asm_output("; Error: jump size is %lu\n", (unsigned long)diff);
+            *(code_curr++) = '\xeb';
+            memcpy(code_curr, & diff, 1);
+            code_curr++;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 2;
+            debug_asm_output("jmp\t%s\n", label_text);
+        }
+    }
+
+    // 4-byte jump
+    inline void jmp_long(char *& code_curr, char * code_jump, const char * label_text)
+    {
+        if(code_jump)
+        {
+            size_t diff = (size_t)code_jump - (size_t)code_curr - 5;
+            *(code_curr++) = '\xe9';
+            memcpy(code_curr, & diff, 4);
+            code_curr += 4;
+            debug_asm_output("%s:\n", label_text);
+        }
+        else
+        {
+            code_curr += 5;
+            debug_asm_output("jmp\t%s\n", label_text);
+        }
+    }
+
+    // mov	bl,ah
+    inline void mov_bl_ah(char *& code_curr)
+    {
+        *(code_curr++) = '\x88';
+        *(code_curr++) = '\xe3';
+        debug_asm_output("mov\tbl,ah\n");
+    }
+
+    // test	bl,1
+    inline void test_bl_1(char *& code_curr)
+    {
+        *(code_curr++) = '\xf6';
+        *(code_curr++) = '\xc3';
+        *(code_curr++) = '\x01';
+        debug_asm_output("test\tbl,1\n");
+    }
+
+    // fprem
+    inline void fprem(char *& code_curr)
+    {
+        *(code_curr++) = '\xd9';
+        *(code_curr++) = '\xf8';
+        debug_asm_output("fprem\n");
     }
 
     // =============================================================================================

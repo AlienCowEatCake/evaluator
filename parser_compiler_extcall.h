@@ -46,7 +46,8 @@ bool parser<T>::compile_extcall()
     functions_1arg_generator<T> f1arg;
     if(!f2arg.check() || !f1arg.check())
     {
-        error_string = "Unsupported calling convention!";
+        error_string = string("Unsupported calling convention for type `") +
+                       typeid(T).name() + string("`!");
         return false;
     }
 
@@ -110,7 +111,7 @@ bool parser<T>::compile_extcall()
     }
     else
     {
-        error_string = "Unsupported type " + string(typeid(T).name()) + "!";
+        error_string = "Unsupported type `" + string(typeid(T).name()) + "`!";
         return false;
     }
 

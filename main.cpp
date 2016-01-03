@@ -20,7 +20,7 @@ unsigned long mtime()
 
 using namespace std;
 
-//#define USE_COMPLEX
+#define USE_COMPLEX
 
 int main()
 {
@@ -30,7 +30,7 @@ int main()
     T y = T(-0.4, -0.5);
     T z = T(0.6, 0.7);
 #else
-    typedef int T;
+    typedef double T;
     T x = 0.2;
     T y = -0.4;
     T z = 0.6;
@@ -41,9 +41,10 @@ int main()
     //cout << log((T)1 - I * x) << " " << log(I * x + (T)1) << endl;
 
     string expr;
+    expr = "atanh(z)";
     //expr = "2+2^3-3";
     //expr = "(-1)^2";//"2*atan((sqrt((-1)^2)) / (-1))";//"arg(-i)";
-    expr = "exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))";
+    //expr = "exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))";
     //expr = "atan(x)";
     //expr = "2^3";
     //expr = "(x*y)+(x/y)-(x*x/y)";
