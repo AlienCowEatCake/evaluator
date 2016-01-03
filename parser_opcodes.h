@@ -640,6 +640,50 @@ namespace parser_opcodes
         debug_asm_output("fprem\n");
     }
 
+    // push eax(rax)
+    inline void push_eax(char *& code_curr)
+    {
+        *(code_curr++) = '\x50';
+#if defined PARSER_JIT_X86
+        debug_asm_output("push\teax\n");
+#elif defined PARSER_JIT_X64
+        debug_asm_output("push\trax\n");
+#endif
+    }
+
+    // push ebx(rbx)
+    inline void push_ebx(char *& code_curr)
+    {
+        *(code_curr++) = '\x53';
+#if defined PARSER_JIT_X86
+        debug_asm_output("push\tebx\n");
+#elif defined PARSER_JIT_X64
+        debug_asm_output("push\trbx\n");
+#endif
+    }
+
+    // pop eax(rax)
+    inline void pop_eax(char *& code_curr)
+    {
+        *(code_curr++) = '\x58';
+#if defined PARSER_JIT_X86
+        debug_asm_output("pop\teax\n");
+#elif defined PARSER_JIT_X64
+        debug_asm_output("pop\trax\n");
+#endif
+    }
+
+    // pop ebx(rbx)
+    inline void pop_ebx(char *& code_curr)
+    {
+        *(code_curr++) = '\x5b';
+#if defined PARSER_JIT_X86
+        debug_asm_output("pop\tebx\n");
+#elif defined PARSER_JIT_X64
+        debug_asm_output("pop\trbx\n");
+#endif
+    }
+
     // =============================================================================================
 
     template<typename T>

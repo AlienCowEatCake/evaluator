@@ -38,6 +38,9 @@ bool parser<T>::compile_inline()
         jit_stack = new T [jit_stack_size];
     }
 
+    memset(jit_code, '\xc3', jit_code_size);
+    memset(jit_stack, 0, jit_stack_size);
+
     char * curr = jit_code;
     T * jit_stack_curr = jit_stack;
 
@@ -84,6 +87,8 @@ bool parser<T>::compile_inline()
                     fdiv(curr);
                 else if(op[0] == '^')
                 {
+                    push_eax(curr);
+                    push_ebx(curr);
                     fxch(curr);
                     // http://wasm.ru/public/forum/viewtopic.php?pid=79346#p79346
                     ftst(curr);
@@ -145,6 +150,9 @@ bool parser<T>::compile_inline()
                     jz(jump_pow_4, curr, "pow_end");
                     jz(jump_pow_5, curr, "pow_end");
                     jmp(jump_pow_6, curr, "pow_end");
+                    //
+                    pop_ebx(curr);
+                    pop_eax(curr);
                 }
                 else
                 {
@@ -504,6 +512,8 @@ bool parser<T>::compile_inline()
                 }
                 else if(op[0] == '^')
                 {
+                    push_eax(curr);
+                    push_ebx(curr);
                     // pow(a, z) = r * cos(theta) + (r * sin(theta)) * I;
                     // r = pow(Abs(a), Re(z)) * exp(-Im(z) * Arg(a));
                     // theta = Re(z) * Arg(a) + Im(z) * log(Abs(a));
@@ -696,6 +706,9 @@ bool parser<T>::compile_inline()
                     fstp_ptr_real(curr, jit_stack_curr);
                     fmul(curr);
                     fstp_ptr_imag(curr, jit_stack_curr);
+                    //
+                    pop_ebx(curr);
+                    pop_eax(curr);
                 }
                 else
                 {

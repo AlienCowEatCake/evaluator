@@ -4,8 +4,10 @@ CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += warn_all
 
-SOURCES += main.cpp \
-    fake.cpp
+SOURCES += \
+#    main.cpp \
+    fake.cpp \
+    benchmark.cpp
 
 HEADERS += parser.h \
     parser_operations.h \

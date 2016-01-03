@@ -256,14 +256,17 @@ namespace parser_internal
     template<typename T>
     void init_variables(map<string, var_container<T> > & vars_map)
     {
-        vars_map["pi"].value() = static_cast<T>(3.14159265358979323846264338327950);
-        vars_map["e"].value()  = static_cast<T>(2.71828182845904523536028747135266);
+        // No more annoying warnings about this cast! >_<
+        // vars_map["pi"].value() = static_cast<T>(3.14159265358979323846264338327950);
+        // vars_map["e"].value()  = static_cast<T>(2.71828182845904523536028747135266);
+        vars_map["pi"].value() = static_cast<T>(4) * pi_atan(static_cast<T>(1));
+        vars_map["e"].value() = pi_exp(static_cast<T>(1));
         if(typeid(T) == typeid(complex<float>) ||
            typeid(T) == typeid(complex<double>) ||
            typeid(T) == typeid(complex<long double>))
         {
-            vars_map["i"].value() = sqrt(static_cast<T>(-1.0));
-            vars_map["j"].value() = sqrt(static_cast<T>(-1.0));
+            vars_map["i"].value() = pi_sqrt(static_cast<T>(-1));
+            vars_map["j"].value() = pi_sqrt(static_cast<T>(-1));
         }
     }
 

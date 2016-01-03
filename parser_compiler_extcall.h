@@ -39,6 +39,9 @@ bool parser<T>::compile_extcall()
         jit_stack = new T [jit_stack_size];
     }
 
+    memset(jit_code, '\xc3', jit_code_size);
+    memset(jit_stack, 0, jit_stack_size);
+
     char * curr = jit_code;
     T * jit_stack_curr = jit_stack;
 
