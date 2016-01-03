@@ -63,3 +63,6 @@ Makefile*
 # Temp files
 *~
 
+# Stackdump files
+*.stackdump
+

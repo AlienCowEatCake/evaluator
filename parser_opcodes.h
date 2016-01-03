@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdarg>
 
 #if (defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
@@ -34,6 +35,17 @@
 #define PARSER_JIT_CALL __attribute__((__cdecl__))
 #else
 #define PARSER_JIT_CALL
+#endif
+#endif
+
+#if !defined PARSER_JIT_DISABLE
+#if (defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))) && \
+    (defined (PARSER_JIT_X86) || defined(PARSER_JIT_X64))
+#define PARSER_JIT_SYSV_ABI
+#endif
+#if (defined (_WIN32) || defined (_WIN64) || defined (__CYGWIN__)) && \
+    (defined (PARSER_JIT_X86) || defined(PARSER_JIT_X64))
+#define PARSER_JIT_MSVC_ABI
 #endif
 #endif
 
@@ -84,7 +96,8 @@ namespace parser_opcodes
         const char * tmp_mem = reinterpret_cast<const char *>(ptr);
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
-        debug_asm_output("fld\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
+        debug_asm_output("fld\t%cword ptr ds:[%08xh]\n",
+                         (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
 #elif defined PARSER_JIT_X64
         // mov    rdx, 0aaaaaaaaaaaaaaah
         *(code_curr++) = '\x48';
@@ -92,7 +105,7 @@ namespace parser_opcodes
         const char * tmp_mem = reinterpret_cast<const char *>(ptr);
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
-        debug_asm_output("mov\trdx, %llxh\n", (size_t)ptr);
+        debug_asm_output("mov\trdx, %016xh\n", (size_t)ptr);
         // fld    [dq]word ptr [rdx]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';
@@ -116,7 +129,7 @@ namespace parser_opcodes
         const char * tmp_mem = reinterpret_cast<const char *>(ptr);
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
-        debug_asm_output("fstp\t%cword ptr ds:[%xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
+        debug_asm_output("fstp\t%cword ptr ds:[%08xh]\n", (typeid(T) == typeid(float) ? 'd' : 'q'), (size_t)ptr);
 #elif defined PARSER_JIT_X64
         // mov    rdx, 0aaaaaaaaaaaaaaah
         *(code_curr++) = '\x48';
@@ -124,7 +137,7 @@ namespace parser_opcodes
         const char * tmp_mem = reinterpret_cast<const char *>(ptr);
         memcpy(code_curr, & tmp_mem, sizeof(T*));
         code_curr += sizeof(T*);
-        debug_asm_output("mov\trdx, %llxh\n", (size_t)ptr);
+        debug_asm_output("mov\trdx, %016xh\n", (size_t)ptr);
         // fstp    [dq]word ptr [rdx]
         if(typeid(T) == typeid(float))
             *(code_curr++) = '\xd9';

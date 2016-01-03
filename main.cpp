@@ -20,7 +20,7 @@ unsigned long mtime()
 
 using namespace std;
 
-#define USE_COMPLEX
+//#define USE_COMPLEX
 
 int main()
 {
@@ -30,7 +30,7 @@ int main()
     T y = T(-0.4, -0.5);
     T z = T(0.6, 0.7);
 #else
-    typedef double T;
+    typedef int T;
     T x = 0.2;
     T y = -0.4;
     T z = 0.6;
@@ -76,7 +76,7 @@ int main()
     else
         cout << "Stack result:   " << result << endl;
 
-    size_t exp_num = 100000000;
+    size_t exp_num = 100000;
     T sum = 0;
     unsigned long t_st = mtime();
     for(size_t i = 0; i < exp_num; i++)

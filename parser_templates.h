@@ -7,7 +7,11 @@
 
 namespace parser_templates
 {
+    using namespace parser_opcodes;
+
     // =============================================================================================
+
+#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI)
 
     static void PARSER_JIT_CALL test_oper_float()
     {
@@ -57,7 +61,11 @@ namespace parser_templates
 #endif
     }
 
+#endif
+
     // =============================================================================================
+
+#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI)
 
     static void PARSER_JIT_CALL test_func_float()
     {
@@ -103,11 +111,16 @@ namespace parser_templates
 #endif
     }
 
+#endif
+
     // =============================================================================================
 
     template<typename T>
     class functions_2arg_generator
     {
+    private:
+        const functions_2arg_generator & operator = (const functions_2arg_generator & other);
+        functions_2arg_generator(const functions_2arg_generator & other);
     protected:
         size_t code_len;
         char * raw_data;
@@ -122,28 +135,7 @@ namespace parser_templates
         {
             status = true;
             const char * tc = NULL;
-#if !defined _MSC_VER
-            if(typeid(T) == typeid(double))
-            {
-                void(PARSER_JIT_CALL * func)() = test_oper_double;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(float))
-            {
-                void(PARSER_JIT_CALL * func)() = test_oper_float;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(std::complex<double>))
-            {
-                void(PARSER_JIT_CALL * func)() = test_oper_complex_double;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(std::complex<float>))
-            {
-                void(PARSER_JIT_CALL * func)() = test_oper_complex_float;
-                tc = reinterpret_cast<const char *>(func);
-            }
-#else
+#if defined PARSER_JIT_MSVC_ABI
             // MS have Security Checks :(
             // https://msdn.microsoft.com/en-us/library/aa290051%28v=vs.71%29.aspx
             if(typeid(T) == typeid(double))
@@ -279,6 +271,149 @@ namespace parser_templates
 #endif
                 tc = reinterpret_cast<const char *>(ms_cflt);
             }
+#elif defined PARSER_JIT_SYSV_ABI
+            if(typeid(T) == typeid(double))
+            {
+                static const char sv_dbl [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x14"             // sub    $0x14,%esp
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\x68\x02\xee\xff\xc0"     // push   $0xc0ffee02
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\xff\xd0"                 // call   *%eax
+                        "\xdd\x1d\x03\xee\xff\xc0" // fstpl  0xc0ffee03
+                        "\x83\xc4\x1c"             // add    $0x1c,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbe\x02\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee02,%rsi
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf2\x0f\x11\x00"                         // movsd  %xmm0,(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_dbl);
+            }
+            else if(typeid(T) == typeid(float))
+            {
+                static const char sv_flt [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x14"             // sub    $0x14,%esp
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\x68\x02\xee\xff\xc0"     // push   $0xc0ffee02
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\xff\xd0"                 // call   *%eax
+                        "\xd9\x1d\x03\xee\xff\xc0" // fstps  0xc0ffee03
+                        "\x83\xc4\x1c"             // add    $0x1c,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbe\x02\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee02,%rsi
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf3\x0f\x11\x00"                         // movss  %xmm0,(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_flt);
+            }
+            else if(typeid(T) == typeid(std::complex<double>))
+            {
+                static const char sv_cdbl [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x1c"             // sub    $0x1c,%esp
+                        "\x89\xe0"                 // mov    %esp,%eax
+                        "\x83\xec\x04"             // sub    $0x4,%esp
+                        "\x68\x02\xee\xff\xc0"     // push   $0xc0ffee02
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\x50"                     // push   %eax
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\xff\xd0"                 // call   *%eax
+                        "\xdd\x44\x24\x0c"         // fldl   0xc(%esp)
+                        "\xdd\x1d\x03\xee\xff\xc0" // fstpl  0xc0ffee03
+                        "\xdd\x44\x24\x14"         // fldl   0x14(%esp)
+                        "\xdd\x1d\x0b\xee\xff\xc0" // fstpl  0xc0ffee0b
+                        "\x83\xc4\x28"             // add    $0x28,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbe\x02\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee02,%rsi
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf2\x0f\x11\x00"                         // movsd  %xmm0,(%rax)
+                        "\xf2\x0f\x11\x48\x08"                     // movsd  %xmm1,0x8(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_cdbl);
+            }
+            else if(typeid(T) == typeid(std::complex<float>))
+            {
+                static const char sv_cflt [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x1c"             // sub    $0x1c,%esp
+                        "\x8d\x44\x24\x08"         // lea    0x8(%esp),%eax
+                        "\x83\xec\x04"             // sub    $0x4,%esp
+                        "\x68\x02\xee\xff\xc0"     // push   $0xc0ffee02
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\x50"                     // push   %eax
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\xff\xd0"                 // call   *%eax
+                        "\xd9\x44\x24\x14"         // flds   0x14(%esp)
+                        "\xd9\x1d\x03\xee\xff\xc0" // fstps  0xc0ffee03
+                        "\xd9\x44\x24\x18"         // flds   0x18(%esp)
+                        "\xd9\x1d\x07\xee\xff\xc0" // fstps  0xc0ffee07
+                        "\x83\xc4\x28"             // add    $0x28,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbe\x02\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee02,%rsi
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x66\x48\x0f\x7e\xc0"                     // movq   %xmm0,%rax
+                        "\x48\xa3\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs %rax,0xdeadbabec0ffee03
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_cflt);
+            }
+#else
+            if(typeid(T) == typeid(double))
+            {
+                void(PARSER_JIT_CALL * func)() = test_oper_double;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(float))
+            {
+                void(PARSER_JIT_CALL * func)() = test_oper_float;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(std::complex<double>))
+            {
+                void(PARSER_JIT_CALL * func)() = test_oper_complex_double;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(std::complex<float>))
+            {
+                void(PARSER_JIT_CALL * func)() = test_oper_complex_float;
+                tc = reinterpret_cast<const char *>(func);
+            }
 #endif
             while(tc[0] == '\xe9') // jump
             {
@@ -358,9 +493,11 @@ namespace parser_templates
 
 #if defined PARSER_ASM_DEBUG
 #if defined PARSER_JIT_X86
-            printf("; call %xh (%xh, %xh) -> %xh\n", (size_t)func, (size_t)larg, (size_t)rarg, (size_t)ret);
+            debug_asm_output("; call %08xh (%08xh, %08xh) -> %08xh\n", (size_t)func,
+                             (size_t)larg, (size_t)rarg, (size_t)ret);
 #elif defined PARSER_JIT_X64
-            printf("; call %llxh (%llxh, %llxh) -> %llxh\n", (size_t)func, (size_t)larg, (size_t)rarg, (size_t)ret);
+            debug_asm_output("; call %016xh (%016xh, %016xh) -> %016xh\n", (size_t)func,
+                             (size_t)larg, (size_t)rarg, (size_t)ret);
 #endif
 #endif
         }
@@ -375,6 +512,9 @@ namespace parser_templates
     template<typename T>
     class functions_1arg_generator
     {
+    private:
+        const functions_1arg_generator & operator = (const functions_1arg_generator & other);
+        functions_1arg_generator(const functions_1arg_generator & other);
     protected:
         size_t code_len;
         char * raw_data;
@@ -388,28 +528,7 @@ namespace parser_templates
         {
             status = true;
             const char * tc = NULL;
-#if !defined _MSC_VER
-            if(typeid(T) == typeid(double))
-            {
-                void(PARSER_JIT_CALL * func)() = test_func_double;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(float))
-            {
-                void(PARSER_JIT_CALL * func)() = test_func_float;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(std::complex<double>))
-            {
-                void(PARSER_JIT_CALL * func)() = test_func_complex_double;
-                tc = reinterpret_cast<const char *>(func);
-            }
-            else if(typeid(T) == typeid(std::complex<float>))
-            {
-                void(PARSER_JIT_CALL * func)() = test_func_complex_float;
-                tc = reinterpret_cast<const char *>(func);
-            }
-#else
+#if defined PARSER_JIT_MSVC_ABI
             // MS have Security Checks :(
             // https://msdn.microsoft.com/en-us/library/aa290051%28v=vs.71%29.aspx
             if(typeid(T) == typeid(double))
@@ -537,6 +656,141 @@ namespace parser_templates
 #endif
                 tc = reinterpret_cast<const char *>(ms_cflt);
             }
+#elif defined PARSER_JIT_SYSV_ABI
+            if(typeid(T) == typeid(double))
+            {
+                static const char sv_dbl [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x18"             // sub    $0x18,%esp
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\xff\xd0"                 // call   *%eax
+                        "\xdd\x1d\x03\xee\xff\xc0" // fstpl  0xc0ffee03
+                        "\x83\xc4\x1c"             // add    $0x1c,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf2\x0f\x11\x00"                         // movsd  %xmm0,(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_dbl);
+            }
+            else if(typeid(T) == typeid(float))
+            {
+                static const char sv_flt [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x18"             // sub    $0x18,%esp
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\xff\xd0"                 // call   *%eax
+                        "\xd9\x1d\x03\xee\xff\xc0" // fstps  0xc0ffee03
+                        "\x83\xc4\x1c"             // add    $0x1c,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf3\x0f\x11\x00"                         // movss  %xmm0,(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_flt);
+            }
+            else if(typeid(T) == typeid(std::complex<double>))
+            {
+                static const char sv_cdbl [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x1c"             // sub    $0x1c,%esp
+                        "\x89\xe0"                 // mov    %esp,%eax
+                        "\x83\xec\x08"             // sub    $0x8,%esp
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\x50"                     // push   %eax
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\xff\xd0"                 // call   *%eax
+                        "\xdd\x44\x24\x0c"         // fldl   0xc(%esp)
+                        "\xdd\x1d\x03\xee\xff\xc0" // fstpl  0xc0ffee03
+                        "\xdd\x44\x24\x14"         // fldl   0x14(%esp)
+                        "\xdd\x1d\x0b\xee\xff\xc0" // fstpl  0xc0ffee0b
+                        "\x83\xc4\x28"             // add    $0x28,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf2\x0f\x11\x00"                         // movsd  %xmm0,(%rax)
+                        "\xf2\x0f\x11\x48\x08"                     // movsd  %xmm1,0x8(%rax)
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_cdbl);
+            }
+            else if(typeid(T) == typeid(std::complex<float>))
+            {
+                static const char sv_cflt [] =
+#if defined PARSER_JIT_X86
+                        "\x83\xec\x1c"             // sub    $0x1c,%esp
+                        "\x8d\x44\x24\x08"         // lea    0x8(%esp),%eax
+                        "\x83\xec\x08"             // sub    $0x8,%esp
+                        "\x68\x01\xee\xff\xc0"     // push   $0xc0ffee01
+                        "\x50"                     // push   %eax
+                        "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                        "\xff\xd0"                 // call   *%eax
+                        "\xd9\x44\x24\x14"         // flds   0x14(%esp)
+                        "\xd9\x1d\x03\xee\xff\xc0" // fstps  0xc0ffee03
+                        "\xd9\x44\x24\x18"         // flds   0x18(%esp)
+                        "\xd9\x1d\x07\xee\xff\xc0" // fstps  0xc0ffee07
+                        "\x83\xc4\x28"             // add    $0x28,%esp
+                        "\xc3";                    // ret
+#elif defined PARSER_JIT_X64
+                        "\x48\x83\xec\x08"                         // sub    $0x8,%rsp
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\x48\xbf\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rdi
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x66\x48\x0f\x7e\xc0"                     // movq   %xmm0,%rax
+                        "\x48\xa3\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs %rax,0xdeadbabec0ffee03
+                        "\x48\x83\xc4\x08"                         // add    $0x8,%rsp
+                        "\xc3";                                    // retq
+#else
+                        "\xc3"; // ret
+#endif
+                tc = reinterpret_cast<const char *>(sv_cflt);
+            }
+#else
+            if(typeid(T) == typeid(double))
+            {
+                void(PARSER_JIT_CALL * func)() = test_func_double;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(float))
+            {
+                void(PARSER_JIT_CALL * func)() = test_func_float;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(std::complex<double>))
+            {
+                void(PARSER_JIT_CALL * func)() = test_func_complex_double;
+                tc = reinterpret_cast<const char *>(func);
+            }
+            else if(typeid(T) == typeid(std::complex<float>))
+            {
+                void(PARSER_JIT_CALL * func)() = test_func_complex_float;
+                tc = reinterpret_cast<const char *>(func);
+            }
 #endif
             while(tc[0] == '\xe9') // jump
             {
@@ -575,23 +829,6 @@ namespace parser_templates
                 if(raw_data[i] == '\xef' && raw_data[i + 1] == '\xbe' &&
                         raw_data[i + 2] == '\xad' && raw_data[i + 3] == '\xde')
                     offset_func = i;
-//#if defined _MSC_VER
-//                // debug call with relative offset
-//                if(raw_data[i] == '\xe8')
-//                    raw_data[i] = raw_data[i + 1] = raw_data[i + 2] =
-//                                  raw_data[i + 3] = raw_data[i + 4] = '\x90'; // nop
-//                // vs security
-//                if(raw_data[i] == '\x48' && raw_data[i + 1] == '\x8b' && raw_data[i + 2] == '\x05' &&
-//                   raw_data[i + 7] == '\x48' && raw_data[i + 8] == '\x33' && raw_data[i + 9] == '\xC5' &&
-//                   raw_data[i + 10] == '\x48' && raw_data[i + 11] == '\x89' && raw_data[i + 12] == '\x85')
-//                    for(size_t j = 0; j < 17; j++)
-//                        raw_data[i + j] = '\x90'; // nop
-//                if((raw_data[i] == '\x48' && raw_data[i + 1] == '\x8B' && raw_data[i + 2] == '\x8D') ||
-//                   (raw_data[i] == '\x48' && raw_data[i + 1] == '\x89' && raw_data[i + 2] == '\x85') ||
-//                   (raw_data[i] == '\x48' && raw_data[i + 1] == '\x8B' && raw_data[i + 2] == '\x05'))
-//                    for(size_t j = 0; j < 7; j++)
-//                        raw_data[i + j] = '\x90'; // nop
-//#endif
             }
             if(offset_return == 0 || offset_arg == 0 || offset_func == 0)
                 status = false;
@@ -628,9 +865,11 @@ namespace parser_templates
 
 #if defined PARSER_ASM_DEBUG
 #if defined PARSER_JIT_X86
-            printf("; call %xh (%xh) -> %xh\n", (size_t)func, (size_t)arg, (size_t)ret);
+            debug_asm_output("; call %08xh (%08xh) -> %08xh\n", (size_t)func,
+                             (size_t)arg, (size_t)ret);
 #elif defined PARSER_JIT_X64
-            printf("; call %llxh (%llxh) -> %llxh\n", (size_t)func, (size_t)arg, (size_t)ret);
+            debug_asm_output("; call %016xh (%016xh) -> %016xh\n", (size_t)func,
+                             (size_t)arg, (size_t)ret);
 #endif
 #endif
         }
