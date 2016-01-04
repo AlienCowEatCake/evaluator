@@ -39,15 +39,39 @@
 #endif
 
 #if !defined PARSER_JIT_DISABLE
+// System V ABI
 #if (defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))) && \
+    !(defined (__CYGWIN__) || defined (__MINGW32__)) && \
     (defined (PARSER_JIT_X86) || defined(PARSER_JIT_X64))
 #define PARSER_JIT_SYSV_ABI
 #endif
-#if (defined (_WIN32) || defined (_WIN64) || defined (__CYGWIN__)) && \
+// MS Compiler ABI
+#if (defined (_WIN32) || defined (_WIN64)) && \
+    !(defined (__CYGWIN__) || defined (__MINGW32__)) && \
     (defined (PARSER_JIT_X86) || defined(PARSER_JIT_X64))
 #define PARSER_JIT_MSVC_ABI
 #endif
+// MinGW and Cygwin ABI
+#if (((defined (_WIN32) || defined (_WIN64)) && defined (__GNUC__)) || \
+     (defined (__MINGW32__) || defined (__CYGWIN__))) && \
+     (defined (PARSER_JIT_X86) || defined(PARSER_JIT_X64))
+#define PARSER_JIT_MINGW_ABI
 #endif
+// Only one ABI must be used!
+#if (defined (PARSER_JIT_SYSV_ABI) && defined (PARSER_JIT_MSVC_ABI)) || \
+    (defined (PARSER_JIT_SYSV_ABI) && defined (PARSER_JIT_MINGW_ABI)) || \
+    (defined (PARSER_JIT_MSVC_ABI) && defined (PARSER_JIT_MINGW_ABI))
+#if defined (PARSER_JIT_SYSV_ABI)
+#undef PARSER_JIT_SYSV_ABI
+#endif // defined PARSER_JIT_SYSV_ABI
+#if defined (PARSER_JIT_MSVC_ABI)
+#undef PARSER_JIT_MSVC_ABI
+#endif // defined PARSER_JIT_MSVC_ABI
+#if defined (PARSER_JIT_MINGW_ABI)
+#undef PARSER_JIT_MINGW_ABI
+#endif // defined PARSER_JIT_MINGW_ABI
+#endif
+#endif // !defined PARSER_JIT_DISABLE
 
 #if !defined PARSER_JIT_DISABLE
 

@@ -11,7 +11,7 @@ namespace parser_templates
 
     // =============================================================================================
 
-#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI)
+#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI || defined PARSER_JIT_MINGW_ABI)
 
     static void PARSER_JIT_CALL test_oper_float()
     {
@@ -65,7 +65,7 @@ namespace parser_templates
 
     // =============================================================================================
 
-#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI)
+#if !(defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_SYSV_ABI || defined PARSER_JIT_MINGW_ABI)
 
     static void PARSER_JIT_CALL test_func_float()
     {
@@ -135,7 +135,7 @@ namespace parser_templates
         {
             status = true;
             const char * tc = NULL;
-#if defined PARSER_JIT_MSVC_ABI
+#if defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_MINGW_ABI
             // MS have Security Checks :(
             // https://msdn.microsoft.com/en-us/library/aa290051%28v=vs.71%29.aspx
             if(typeid(T) == typeid(double))
@@ -236,7 +236,7 @@ namespace parser_templates
             else if(typeid(T) == typeid(std::complex<float>))
             {
                 static const char ms_cflt [] =
-#if defined PARSER_JIT_X86
+#if defined PARSER_JIT_X86 && defined PARSER_JIT_MSVC_ABI
                         "\x55"                     // push        ebp
                         "\x8B\xEC"                 // mov         ebp,esp
                         "\x83\xEC\x08"             // sub         esp,8
@@ -254,7 +254,7 @@ namespace parser_templates
                         "\x8B\xE5"                 // mov         esp,ebp
                         "\x5D"                     // pop         ebp
                         "\xC3";                    // ret
-#elif defined PARSER_JIT_X64
+#elif defined PARSER_JIT_X64 && defined PARSER_JIT_MSVC_ABI
                         "\x48\x83\xEC\x28"                         // sub         rsp,28h
                         "\x48\xBA\x01\xEE\xFF\xC0\xBE\xBA\xAD\xDE" // mov         rdx,0DEADBABEC0FFEE01h
                         "\x48\x8D\x4C\x24\x30"                     // lea         rcx,[rsp+30h]
@@ -266,6 +266,39 @@ namespace parser_templates
                         "\xF2\x0F\x11\x01"                         // movsd       mmword ptr [rcx],xmm0
                         "\x48\x83\xC4\x28"                         // add         rsp,28h
                         "\xC3";                                    // ret
+#elif defined PARSER_JIT_X86 && defined PARSER_JIT_MINGW_ABI
+                        "\x53"                             // push   %ebx
+                        "\xb8\xef\xbe\xad\xde"             // mov    $0xdeadbeef,%eax
+                        "\x83\xec\x18"                     // sub    $0x18,%esp
+                        "\xc7\x44\x24\x04\x02\xee\xff\xc0" // movl   $0xc0ffee02,0x4(%esp)
+                        "\xc7\x04\x24\x01\xee\xff\xc0"     // movl   $0xc0ffee01,(%esp)
+                        "\xff\xd0"                         // call   *%eax
+                        "\x89\x44\x24\x0c"                 // mov    %eax,0xc(%esp)
+                        "\xd9\x44\x24\x0c"                 // flds   0xc(%esp)
+                        "\x89\x54\x24\x0c"                 // mov    %edx,0xc(%esp)
+                        "\xd9\x44\x24\x0c"                 // flds   0xc(%esp)
+                        "\xd9\xc9"                         // fxch   %st(1)
+                        "\xd9\x1d\x03\xee\xff\xc0"         // fstps  0xc0ffee03
+                        "\xd9\x1d\x07\xee\xff\xc0"         // fstps  0xc0ffee07
+                        "\x83\xc4\x18"                     // add    $0x18,%esp
+                        "\x5b"                             // pop    %ebx
+                        "\xc3";                            // ret
+#elif defined PARSER_JIT_X64 && defined PARSER_JIT_MINGW_ABI
+                        "\x48\x83\xec\x38"                         // sub    $0x38,%rsp
+                        "\x48\xba\x02\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee02,%rdx
+                        "\x48\xb9\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rcx
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x89\x44\x24\x2c"                         // mov    %eax,0x2c(%rsp)
+                        "\x48\xc1\xe8\x20"                         // shr    $0x20,%rax
+                        "\xf3\x0f\x10\x4c\x24\x2c"                 // movss  0x2c(%rsp),%xmm1
+                        "\x89\x44\x24\x2c"                         // mov    %eax,0x2c(%rsp)
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf3\x0f\x10\x44\x24\x2c"                 // movss  0x2c(%rsp),%xmm0
+                        "\xf3\x0f\x11\x40\x04"                     // movss  %xmm0,0x4(%rax)
+                        "\xf3\x0f\x11\x08"                         // movss  %xmm1,(%rax)
+                        "\x48\x83\xc4\x38"                         // add    $0x38,%rsp
+                        "\xc3";                                    // retq
 #else
                         "\xC3"; // ret
 #endif
@@ -533,7 +566,7 @@ namespace parser_templates
         {
             status = true;
             const char * tc = NULL;
-#if defined PARSER_JIT_MSVC_ABI
+#if defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_MINGW_ABI
             // MS have Security Checks :(
             // https://msdn.microsoft.com/en-us/library/aa290051%28v=vs.71%29.aspx
             if(typeid(T) == typeid(double))
@@ -628,7 +661,7 @@ namespace parser_templates
             else if(typeid(T) == typeid(std::complex<float>))
             {
                 static const char ms_cflt [] =
-#if defined PARSER_JIT_X86
+#if defined PARSER_JIT_X86 && defined PARSER_JIT_MSVC_ABI
                         "\x55"                     // push        ebp
                         "\x8B\xEC"                 // mov         ebp,esp
                         "\x83\xEC\x08"             // sub         esp,8
@@ -645,7 +678,7 @@ namespace parser_templates
                         "\x8B\xE5"                 // mov         esp,ebp
                         "\x5D"                     // pop         ebp
                         "\xC3";                    // ret
-#elif defined PARSER_JIT_X64
+#elif defined PARSER_JIT_X64 && defined PARSER_JIT_MSVC_ABI
                         "\x48\x83\xEC\x28"                         // sub         rsp,28h
                         "\x48\xBA\x01\xEE\xFF\xC0\xBE\xBA\xAD\xDE" // mov         rdx,0DEADBABEC0FFEE01h
                         "\x48\x8D\x4C\x24\x30"                     // lea         rcx,[rsp+30h]
@@ -656,6 +689,37 @@ namespace parser_templates
                         "\xF2\x0F\x11\x01"                         // movsd       mmword ptr [rcx],xmm0
                         "\x48\x83\xC4\x28"                         // add         rsp,28h
                         "\xC3";                                    // ret
+#elif defined PARSER_JIT_X86 && defined PARSER_JIT_MINGW_ABI
+                        "\x53"                          // push   %ebx
+                        "\xb8\xef\xbe\xad\xde"          // mov    $0xdeadbeef,%eax
+                        "\x83\xec\x18"                  // sub    $0x18,%esp
+                        "\xc7\x04\x24\x01\xee\xff\xc0"  // movl   $0xc0ffee01,(%esp)
+                        "\xff\xd0"                      // call   *%eax
+                        "\x89\x44\x24\x0c"              // mov    %eax,0xc(%esp)
+                        "\xd9\x44\x24\x0c"              // flds   0xc(%esp)
+                        "\x89\x54\x24\x0c"              // mov    %edx,0xc(%esp)
+                        "\xd9\x44\x24\x0c"              // flds   0xc(%esp)
+                        "\xd9\xc9"                      // fxch   %st(1)
+                        "\xd9\x1d\x03\xee\xff\xc0"      // fstps  0xc0ffee03
+                        "\xd9\x1d\x07\xee\xff\xc0"      // fstps  0xc0ffee07
+                        "\x83\xc4\x18"                  // add    $0x18,%esp
+                        "\x5b"                          // pop    %ebx
+                        "\xc3";                         // ret
+#elif defined PARSER_JIT_X64 && defined PARSER_JIT_MINGW_ABI
+                        "\x48\x83\xec\x38"                         // sub    $0x38,%rsp
+                        "\x48\xb9\x01\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee01,%rcx
+                        "\x48\xb8\xef\xbe\xad\xde\xbe\xba\xad\xde" // movabs $0xdeadbabedeadbeef,%rax
+                        "\xff\xd0"                                 // callq  *%rax
+                        "\x89\x44\x24\x2c"                         // mov    %eax,0x2c(%rsp)
+                        "\x48\xc1\xe8\x20"                         // shr    $0x20,%rax
+                        "\xf3\x0f\x10\x4c\x24\x2c"                 // movss  0x2c(%rsp),%xmm1
+                        "\x89\x44\x24\x2c"                         // mov    %eax,0x2c(%rsp)
+                        "\x48\xb8\x03\xee\xff\xc0\xbe\xba\xad\xde" // movabs $0xdeadbabec0ffee03,%rax
+                        "\xf3\x0f\x10\x44\x24\x2c"                 // movss  0x2c(%rsp),%xmm0
+                        "\xf3\x0f\x11\x40\x04"                     // movss  %xmm0,0x4(%rax)
+                        "\xf3\x0f\x11\x08"                         // movss  %xmm1,(%rax)
+                        "\x48\x83\xc4\x38"                         // add    $0x38,%rsp
+                        "\xc3";                                    // retq
 #else
                         "\xC3"; // ret
 #endif

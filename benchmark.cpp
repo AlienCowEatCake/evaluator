@@ -6,7 +6,7 @@
 #include "parser.h"
 
 // cl /Gd /Ox /GS- /EHsc /DNDEBUG /Fe: bench.exe /MD benchmark.cpp
-// g++ -O3 -march=native -mtune=native -DNDEBUG benchmark.cpp -o bench
+// g++ -O3 -march=native -mtune=native -DNDEBUG -lrt benchmark.cpp -o bench
 
 #if defined _WIN32
 #include <windows.h>
@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
     stringstream data, name;
     name << "result_";
 
-#if defined __GNUC__
+#if defined __GNUC__ && !defined __clang__
     data << "Compiler: GCC " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__ << endl;
     name << "gcc-" << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__ << "_";
 #endif
@@ -62,6 +62,10 @@ int main(int argc, char * argv[])
     data << "ABI: SYSV" << endl;
     name << "abi-sysv";
 #endif
+#if defined PARSER_JIT_MINGW_ABI
+    data << "ABI: MinGW" << endl;
+    name << "abi-mingw";
+#endif
 
     name << ".txt";
     ofstream ofs(name.str().c_str());
@@ -72,9 +76,10 @@ int main(int argc, char * argv[])
     ofs << "\n================================" << endl;
 
     vector<string> exprs;
+    /*
     exprs.push_back("x+y");
     exprs.push_back("x-y");
-    exprs.push_back("x*y");
+    exprs.push_back("x*y");*/
     exprs.push_back("x^y");
     exprs.push_back("imag(x)");
     exprs.push_back("real(x)");
