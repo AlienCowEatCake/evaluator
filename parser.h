@@ -838,7 +838,10 @@ public:
         if(is_compiled)
         {
             typedef void(PARSER_JIT_CALL * jit_f_type)();
-            jit_f_type func = reinterpret_cast<jit_f_type>(jit_code);
+            jit_f_type func = NULL;
+            size_t call_addr = (size_t)(& func);
+            size_t code_addr = (size_t)(& jit_code);
+            memcpy((void *)call_addr, (void *)code_addr, sizeof(void *));
             func();
             result = jit_stack[0];
             return true;

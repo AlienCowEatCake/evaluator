@@ -430,22 +430,30 @@ namespace parser_templates
             if(typeid(T) == typeid(double))
             {
                 void(PARSER_JIT_CALL * func)() = test_oper_double;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(float))
             {
                 void(PARSER_JIT_CALL * func)() = test_oper_float;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(std::complex<double>))
             {
                 void(PARSER_JIT_CALL * func)() = test_oper_complex_double;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(std::complex<float>))
             {
                 void(PARSER_JIT_CALL * func)() = test_oper_complex_float;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
 #endif
             if(!tc)
@@ -843,22 +851,30 @@ namespace parser_templates
             if(typeid(T) == typeid(double))
             {
                 void(PARSER_JIT_CALL * func)() = test_func_double;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(float))
             {
                 void(PARSER_JIT_CALL * func)() = test_func_float;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(std::complex<double>))
             {
                 void(PARSER_JIT_CALL * func)() = test_func_complex_double;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
             else if(typeid(T) == typeid(std::complex<float>))
             {
                 void(PARSER_JIT_CALL * func)() = test_func_complex_float;
-                tc = reinterpret_cast<const char *>(func);
+                size_t call_addr = (size_t)(& func);
+                size_t code_addr = (size_t)(& tc);
+                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
             }
 #endif
             if(!tc)

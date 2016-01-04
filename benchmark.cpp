@@ -5,7 +5,8 @@
 #include <sstream>
 #include "parser.h"
 
-// cl /Gd /Ox /GS- /EHsc /DNDEBUG /Fe: bench.exe /MD benchmark.cpp
+// cl /Gd /Ox /GS- /EHsc /DNDEBUG /MD benchmark.cpp /Febench.exe
+// g++ -O3 -march=native -mtune=native -DNDEBUG benchmark.cpp -o bench.exe
 // g++ -O3 -march=native -mtune=native -DNDEBUG -lrt benchmark.cpp -o bench
 
 #if defined _WIN32
@@ -56,7 +57,7 @@ int main(int argc, char * argv[])
 #endif
 #if defined PARSER_JIT_MSVC_ABI
     data << "ABI: MSVC" << endl;
-    name << "abi-ms";
+    name << "abi-msvc";
 #endif
 #if defined PARSER_JIT_SYSV_ABI
     data << "ABI: SYSV" << endl;
@@ -76,10 +77,10 @@ int main(int argc, char * argv[])
     ofs << "\n================================" << endl;
 
     vector<string> exprs;
-    /*
     exprs.push_back("x+y");
     exprs.push_back("x-y");
-    exprs.push_back("x*y");*/
+    exprs.push_back("x*y");
+    exprs.push_back("x/y");
     exprs.push_back("x^y");
     exprs.push_back("imag(x)");
     exprs.push_back("real(x)");
