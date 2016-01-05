@@ -230,6 +230,7 @@ protected:
         operators = other.operators;
         status = other.status;
         error_string = other.error_string;
+        parser_table = other.parser_table;
 #if !defined PARSER_JIT_DISABLE
         is_compiled = false;
         jit_code = NULL;
@@ -364,7 +365,7 @@ public:
             }
             else if((*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
             {
-                while(it != str.end() && *it != '(' && *it != ')' &&
+                while(it != str.end() && *it != '(' && *it != ')' && *it != '\f' && *it != '\v' &&
                       *it != ' ' && *it != '\t' && *it != '\0' && *it != '\r' && *it != '\n' &&
                       operators.find(*it) == operators.end())
                 {
@@ -379,7 +380,8 @@ public:
                 transform(a.begin(), a.end(), a.begin(), ::tolower);
                 tokens.push_back(a);
             }
-            else if(*it == ' ' || *it == '\t' || *it == '\0' || *it == '\r' || *it == '\n')
+            else if(*it == ' ' || *it == '\t' || *it == '\0' || *it == '\r' ||
+                    *it == '\n' || *it == '\f' || *it == '\v')
             {
                 ++it;
             }

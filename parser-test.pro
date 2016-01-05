@@ -5,9 +5,9 @@ CONFIG -= qt
 CONFIG += warn_all
 
 SOURCES += \
-#    main.cpp \
+    main.cpp \
     fake.cpp \
-    benchmark.cpp
+#    benchmark.cpp
 
 HEADERS += parser.h \
     parser_operations.h \

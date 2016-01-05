@@ -41,7 +41,7 @@ int main()
     //cout << log((T)1 - I * x) << " " << log(I * x + (T)1) << endl;
 
     string expr;
-    expr = "atanh(z)";
+    expr = "log(0.6-0.8*i)";//"acos(-0.8)";
     //expr = "2+2^3-3";
     //expr = "(-1)^2";//"2*atan((sqrt((-1)^2)) / (-1))";//"arg(-i)";
     //expr = "exp(- (0.5 - x) * (0.5 - x) - (0.5 - z) * (0.5 - z))";

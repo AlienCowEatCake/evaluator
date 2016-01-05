@@ -27,19 +27,21 @@ bool parser<T>::compile_extcall()
         VirtualProtect(jit_code, jit_code_size, PAGE_EXECUTE_READWRITE, &tmp);
 #else
         int prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+#if defined __APPLE__
+        int flags = MAP_PRIVATE | MAP_ANON;
+#else
         int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#endif
         jit_code = (char *)mmap(NULL, jit_code_size, prot, flags, -1, 0);
 #endif
     }
-    memset(jit_code, 0, jit_code_size);
+    memset(jit_code, '\xc3', jit_code_size);
 
     if(!jit_stack || !jit_stack_size)
     {
         jit_stack_size = 128 * 1024 / sizeof(T); // 128 KiB
         jit_stack = new T [jit_stack_size];
     }
-
-    memset(jit_code, '\xc3', jit_code_size);
     memset(jit_stack, 0, jit_stack_size);
 
     char * curr = jit_code;

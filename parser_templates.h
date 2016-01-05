@@ -134,6 +134,9 @@ namespace parser_templates
         functions_2arg_generator()
         {
             status = true;
+            raw_data = NULL;
+            code_len = 0;
+            offset_return = offset_return_2 = offset_larg = offset_rarg = offset_func = 0;
             const char * tc = NULL;
 #if defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_MINGW_ABI
             // MS have Security Checks :(
@@ -467,7 +470,6 @@ namespace parser_templates
                 memcpy(&offset, tc + 1, 4);
                 tc += offset + 5;
             }
-            code_len = 0;
             const char * tcc = tc;
             while(* tcc != '\xc3') // ret
             {
@@ -476,7 +478,6 @@ namespace parser_templates
             }
             raw_data = new char [code_len + 10 * sizeof(size_t)];
             memcpy(raw_data, tc, code_len);
-            offset_return = offset_return_2 = offset_larg = offset_rarg = offset_func = 0;
             for(size_t i = 0; i < code_len; i++)
             {
                 // return pointer - 0xC0FFEE03
@@ -573,6 +574,9 @@ namespace parser_templates
         functions_1arg_generator()
         {
             status = true;
+            raw_data = NULL;
+            code_len = 0;
+            offset_return = offset_return_2 = offset_arg = offset_func = 0;
             const char * tc = NULL;
 #if defined PARSER_JIT_MSVC_ABI || defined PARSER_JIT_MINGW_ABI
             // MS have Security Checks :(
@@ -888,7 +892,6 @@ namespace parser_templates
                 memcpy(&offset, tc + 1, 4);
                 tc += offset + 5;
             }
-            code_len = 0;
             const char * tcc = tc;
             while(* tcc != '\xc3') // ret
             {
@@ -897,7 +900,6 @@ namespace parser_templates
             }
             raw_data = new char [code_len + 10 * sizeof(size_t)];
             memcpy(raw_data, tc, code_len);
-            offset_return = offset_return_2 = offset_arg = offset_func = 0;
             for(size_t i = 0; i < code_len; i++)
             {
                 // return pointer - 0xC0FFEE03

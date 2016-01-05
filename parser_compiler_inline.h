@@ -26,19 +26,21 @@ bool parser<T>::compile_inline()
         VirtualProtect(jit_code, jit_code_size, PAGE_EXECUTE_READWRITE, &tmp);
 #else
         int prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+#if defined __APPLE__
+        int flags = MAP_PRIVATE | MAP_ANON;
+#else
         int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#endif
         jit_code = (char *)mmap(NULL, jit_code_size, prot, flags, -1, 0);
 #endif
     }
-    memset(jit_code, 0, jit_code_size);
+    memset(jit_code, '\xc3', jit_code_size);
 
     if(!jit_stack || !jit_stack_size)
     {
         jit_stack_size = 128 * 1024 / sizeof(T); // 128 KiB
         jit_stack = new T [jit_stack_size];
     }
-
-    memset(jit_code, '\xc3', jit_code_size);
     memset(jit_stack, 0, jit_stack_size);
 
     char * curr = jit_code;
@@ -87,7 +89,7 @@ bool parser<T>::compile_inline()
                     fdiv(curr);
                 else if(op[0] == '^')
                 {
-                    push_eax(curr);
+//                    push_eax(curr);
                     push_ebx(curr);
                     fxch(curr);
                     // http://wasm.ru/public/forum/viewtopic.php?pid=79346#p79346
@@ -152,7 +154,7 @@ bool parser<T>::compile_inline()
                     jmp(jump_pow_6, curr, "pow_end");
                     //
                     pop_ebx(curr);
-                    pop_eax(curr);
+//                    pop_eax(curr);
                 }
                 else
                 {
@@ -512,7 +514,7 @@ bool parser<T>::compile_inline()
                 }
                 else if(op[0] == '^')
                 {
-                    push_eax(curr);
+//                    push_eax(curr);
                     push_ebx(curr);
                     // pow(a, z) = r * cos(theta) + (r * sin(theta)) * I;
                     // r = pow(Abs(a), Re(z)) * exp(-Im(z) * Arg(a));
@@ -708,7 +710,7 @@ bool parser<T>::compile_inline()
                     fstp_ptr_imag(curr, jit_stack_curr);
                     //
                     pop_ebx(curr);
-                    pop_eax(curr);
+//                    pop_eax(curr);
                 }
                 else
                 {
@@ -1221,21 +1223,21 @@ bool parser<T>::compile_inline()
                     sahf(curr);
                     char * jump_sign_1 = curr;
                     ja(curr, NULL, "sign_m1");
-                    char * jump_sign_2 = curr;
-                    jb(curr, NULL, "sign_1");
-                    //fldz(curr);
+//                    char * jump_sign_2 = curr;
+//                    jb(curr, NULL, "sign_1");
+//                    //fldz(curr);
                     fld1(curr); // TODO: WTF?
                     char * jump_sign_3 = curr;
                     jmp(curr, NULL, "sign_end");
                     ja(jump_sign_1, curr, "sign_m1");
                     fld1(curr);
                     fchs(curr);
-                    char * jump_sign_4 = curr;
-                    jmp(curr, NULL, "sign_end");
-                    jb(jump_sign_2, curr, "sign_1");
-                    fld1(curr);
+//                    char * jump_sign_4 = curr;
+//                    jmp(curr, NULL, "sign_end");
+//                    jb(jump_sign_2, curr, "sign_1");
+//                    fld1(curr);
                     jmp(jump_sign_3, curr, "sign_end");
-                    jmp(jump_sign_4, curr, "sign_end");
+//                    jmp(jump_sign_4, curr, "sign_end");
                     //
                     // |z|
                     fld_ptr_imag(curr, jit_stack_curr);
@@ -1315,21 +1317,21 @@ bool parser<T>::compile_inline()
                     sahf(curr);
                     char * jump_sign_1 = curr;
                     ja(curr, NULL, "sign_m1");
-                    char * jump_sign_2 = curr;
-                    jb(curr, NULL, "sign_1");
-                    //fldz(curr);
+//                    char * jump_sign_2 = curr;
+//                    jb(curr, NULL, "sign_1");
+//                    //fldz(curr);
                     fld1(curr); // TODO: WTF?
                     char * jump_sign_3 = curr;
                     jmp(curr, NULL, "sign_end");
                     ja(jump_sign_1, curr, "sign_m1");
                     fld1(curr);
                     fchs(curr);
-                    char * jump_sign_4 = curr;
-                    jmp(curr, NULL, "sign_end");
-                    jb(jump_sign_2, curr, "sign_1");
-                    fld1(curr);
+//                    char * jump_sign_4 = curr;
+//                    jmp(curr, NULL, "sign_end");
+//                    jb(jump_sign_2, curr, "sign_1");
+//                    fld1(curr);
                     jmp(jump_sign_3, curr, "sign_end");
-                    jmp(jump_sign_4, curr, "sign_end");
+//                    jmp(jump_sign_4, curr, "sign_end");
                     //
                     // |z|
                     fld_ptr_imag(curr, tmp);
@@ -1912,21 +1914,21 @@ bool parser<T>::compile_inline()
                     sahf(curr);
                     char * jump_sign_1 = curr;
                     ja(curr, NULL, "sign_m1");
-                    char * jump_sign_2 = curr;
-                    jb(curr, NULL, "sign_1");
-                    //fldz(curr);
+//                    char * jump_sign_2 = curr;
+//                    jb(curr, NULL, "sign_1");
+//                    //fldz(curr);
                     fld1(curr); // TODO: WTF?
                     char * jump_sign_3 = curr;
                     jmp(curr, NULL, "sign_end");
                     ja(jump_sign_1, curr, "sign_m1");
                     fld1(curr);
                     fchs(curr);
-                    char * jump_sign_4 = curr;
-                    jmp(curr, NULL, "sign_end");
-                    jb(jump_sign_2, curr, "sign_1");
-                    fld1(curr);
+//                    char * jump_sign_4 = curr;
+//                    jmp(curr, NULL, "sign_end");
+//                    jb(jump_sign_2, curr, "sign_1");
+//                    fld1(curr);
                     jmp(jump_sign_3, curr, "sign_end");
-                    jmp(jump_sign_4, curr, "sign_end");
+//                    jmp(jump_sign_4, curr, "sign_end");
                     //
                     // |z|
                     fld_ptr_imag(curr, tmp);

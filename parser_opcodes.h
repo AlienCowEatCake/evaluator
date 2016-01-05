@@ -460,6 +460,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 2);
             code_curr += 2;
             debug_asm_output("jz\t%s\n", label_text);
         }
@@ -479,6 +480,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 6);
             code_curr += 6;
             debug_asm_output("jz\t%s\n", label_text);
         }
@@ -499,6 +501,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 2);
             code_curr += 2;
             debug_asm_output("ja\t%s\n", label_text);
         }
@@ -518,6 +521,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 6);
             code_curr += 6;
             debug_asm_output("ja\t%s\n", label_text);
         }
@@ -538,6 +542,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 2);
             code_curr += 2;
             debug_asm_output("jb\t%s\n", label_text);
         }
@@ -557,6 +562,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 6);
             code_curr += 6;
             debug_asm_output("jb\t%s\n", label_text);
         }
@@ -577,6 +583,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 2);
             code_curr += 2;
             debug_asm_output("jnz\t%s\n", label_text);
         }
@@ -596,6 +603,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 6);
             code_curr += 6;
             debug_asm_output("jnz\t%s\n", label_text);
         }
@@ -616,6 +624,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 2);
             code_curr += 2;
             debug_asm_output("jmp\t%s\n", label_text);
         }
@@ -634,6 +643,7 @@ namespace parser_opcodes
         }
         else
         {
+            memset(code_curr, '\x90', 5);
             code_curr += 5;
             debug_asm_output("jmp\t%s\n", label_text);
         }
