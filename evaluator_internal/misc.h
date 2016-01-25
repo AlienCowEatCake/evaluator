@@ -131,7 +131,7 @@ void evaluator<T>::reset_vars()
 template<typename T>
 evaluator<T>::evaluator(const evaluator & other)
 {
-    copy_from_other_parser(other);
+    copy_from_other(other);
 }
 
 template<typename T>
