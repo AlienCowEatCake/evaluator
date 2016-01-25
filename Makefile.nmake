@@ -1,0 +1,26 @@
+CXXFLAGS = /Ox /DNDEBUG /MT /GS- /nologo /W3 /EHsc
+LDFLAGS = /NOLOGO /SUBSYSTEM:CONSOLE /RELEASE /SAFESEH:NO /MANIFEST:NO
+EXECUTABLE = bench.exe
+OBJECTS = \
+	evaluator_internal\\transition_table.obj \
+	evaluator_internal\\jit\\common.obj \
+	evaluator_internal\\jit\\func_templates.obj \
+	evaluator_internal\\jit\\oper_templates.obj \
+	evaluator_internal\\jit\\real_templates.obj \
+	benchmark.obj
+
+all: $(OBJECTS) $(EXECUTABLE)
+
+.PHONY: clean distclean
+
+.cpp.obj:
+	cl $(CXXFLAGS) /c $< /Fo$@
+
+$(EXECUTABLE): $(OBJECTS)
+	link $(OBJECTS) $(LDFLAGS) /out:$@
+
+clean:
+	del /q /f $(OBJECTS) 2>nul
+
+distclean: clean
+	del /q /f $(EXECUTABLE) 2>nul
