@@ -99,7 +99,7 @@ bool evaluator<T>::parse(const std::string & str)
     for(string::const_iterator it = str.begin(); it != str.end();)
     {
         string a;
-        if(*it >= '0' && *it <= '9')
+        if((*it >= '0' && *it <= '9') || *it == '.' || *it == ',')
         {
             while(it != str.end() && *it >= '0' && *it <= '9')
             {
@@ -136,8 +136,12 @@ bool evaluator<T>::parse(const std::string & str)
             {
                 a.push_back(*(it++));
             }
+            string b(a);
             transform(a.begin(), a.end(), a.begin(), ::tolower);
-            tokens.push_back(a);
+            if(functions.find(a) != functions.end() || constants.find(a) != constants.end())
+                tokens.push_back(a);
+            else
+                tokens.push_back(b);
         }
         else if(operators.find(*it) != operators.end() || *it == '(' || *it == ')')
         {
@@ -216,26 +220,37 @@ bool evaluator<T>::parse(const std::string & str)
                         ttype_curr = TTYPE_OPER;
                     }
                 }
-                else if(*it == "var")
+                else if(*it == "var" || *it == "const")
                 {
-                    if(tokens[token_pos_curr][0] >= 'a' && tokens[token_pos_curr][0] <= 'z' &&
-                       ((token_pos_curr + 1 >= tokens.size()) ||
-                        (operators.find(tokens[token_pos_curr + 1][0]) != operators.end()) ||
-                        (tokens[token_pos_curr + 1] == ")")))
+                    bool last_token = token_pos_curr + 1 >= tokens.size();
+                    const char * curr_tok = tokens[token_pos_curr].c_str();
+                    const char * next_tok = (last_token ? NULL : tokens[token_pos_curr + 1].c_str());
+
+                    bool first_letter = (curr_tok[0] >= 'a' && curr_tok[0] <= 'z') ||
+                                        (curr_tok[0] >= 'A' && curr_tok[0] <= 'Z');
+                    bool first_number = curr_tok[0] >= '0' && curr_tok[0] <= '9';
+                    bool first_dot = curr_tok[0] == '.';
+                    bool second_number = curr_tok[1] >= '0' && curr_tok[1] <= '9';
+                    bool next_operator = !last_token && operators.find(next_tok[0]) != operators.end();
+                    bool next_bracket = !last_token && next_tok[0] == ')';
+                    bool is_constant = constants.find(curr_tok) != constants.end();
+
+                    if(*it == "var")
                     {
-                        good_token = true;
-                        ttype_curr = TTYPE_VAR;
+                        if(!is_constant && first_letter && (last_token || next_operator || next_bracket))
+                        {
+                            good_token = true;
+                            ttype_curr = TTYPE_VAR;
+                        }
                     }
-                }
-                else if(*it == "const")
-                {
-                    if(tokens[token_pos_curr][0] >= '0' && tokens[token_pos_curr][0] <= '9' &&
-                       ((token_pos_curr + 1 >= tokens.size()) ||
-                        (operators.find(tokens[token_pos_curr + 1][0]) != operators.end()) ||
-                        (tokens[token_pos_curr + 1] == ")")))
+                    else if(*it == "const")
                     {
-                        good_token = true;
-                        ttype_curr = TTYPE_CONST;
+                        if((is_constant || first_number || (first_dot && second_number)) &&
+                           (last_token || next_operator || next_bracket))
+                        {
+                            good_token = true;
+                            ttype_curr = TTYPE_CONST;
+                        }
                     }
                 }
                 else if(*it == "sign")
@@ -284,10 +299,16 @@ bool evaluator<T>::parse(const std::string & str)
                         a = "-" + a;
                         unary_minus = false;
                     }
-                    stringstream b;
-                    b << a;
                     T c;
-                    b >> c;
+                    typename std::map<std::string, T>::const_iterator
+                            it = constants.find(tokens[token_pos_curr]);
+                    if(it == constants.end())
+                    {
+                        stringstream b(a);
+                        b >> c;
+                    }
+                    else
+                        c = it->second;
                     expression.push_back(evaluator_object<T>(a, c));
                     break;
                 }

@@ -60,6 +60,8 @@ protected:
     std::map<std::string, func_type> functions;
     // Container: [variable name]->pointer to var_container
     std::map<std::string, evaluator_internal::var_container<T> > variables;
+    // Container: [constant name]->constant value
+    std::map<std::string, T> constants;
     // Container: [operator name]->pair(priority, operator pointer)
     std::map<char, std::pair<unsigned short int, oper_type> > operators;
     // Current parsing status: true is good, false is bad
@@ -141,6 +143,9 @@ public:
         //return compile_extcall();
         return compile_inline();
     }
+
+    // Print expression
+    void debug_print() const;
 };
 
 #include "evaluator_internal/misc.h"
