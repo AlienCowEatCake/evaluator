@@ -100,7 +100,7 @@ public:
         }
         while(tc[0] == '\xe9') // jump
         {
-            size_t offset;
+            size_t offset = 0;
             memcpy(&offset, tc + 1, 4);
             tc += offset + 5;
         }

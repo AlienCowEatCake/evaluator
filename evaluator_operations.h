@@ -259,8 +259,9 @@ namespace evaluator_internal
            typeid(T) == typeid(std::complex<double>) ||
            typeid(T) == typeid(std::complex<long double>))
         {
-            consts_map["i"] = eval_sqrt(static_cast<T>(-1));
-            consts_map["j"] = eval_sqrt(static_cast<T>(-1));
+            T complex_I = eval_sqrt(static_cast<T>(-1));
+            consts_map["i"] = complex_I;
+            consts_map["j"] = complex_I;
         }
     }
 
