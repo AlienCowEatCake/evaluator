@@ -7,7 +7,7 @@ void EVALUATOR_JIT_CALL test_func_flt()
 {
     typedef float T;
     typedef T(* F)(const T &);
-#if defined(EVALUATOR_JIT_X86)
+#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X32)
     (*((T *)(0xC0FFEE03))) = ((F)(0xDEADBEEF))((*((T *)(0xC0FFEE01))));
 #elif defined(EVALUATOR_JIT_X64)
     (*((T *)(0xDEADBABEC0FFEE03))) = ((F)(0xDEADBABEDEADBEEF))((*((T *)(0xDEADBABEC0FFEE01))));
@@ -18,7 +18,7 @@ void EVALUATOR_JIT_CALL test_func_dbl()
 {
     typedef double T;
     typedef T(* F)(const T &);
-#if defined(EVALUATOR_JIT_X86)
+#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X32)
     (*((T *)(0xC0FFEE03))) = ((F)(0xDEADBEEF))((*((T *)(0xC0FFEE01))));
 #elif defined(EVALUATOR_JIT_X64)
     (*((T *)(0xDEADBABEC0FFEE03))) = ((F)(0xDEADBABEDEADBEEF))((*((T *)(0xDEADBABEC0FFEE01))));
@@ -29,7 +29,7 @@ void EVALUATOR_JIT_CALL test_func_cflt()
 {
     typedef std::complex<float> T;
     typedef T(* F)(const T &);
-#if defined(EVALUATOR_JIT_X86)
+#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X32)
     (*((T *)(0xC0FFEE03))) = ((F)(0xDEADBEEF))((*((T *)(0xC0FFEE01))));
 #elif defined(EVALUATOR_JIT_X64)
     (*((T *)(0xDEADBABEC0FFEE03))) = ((F)(0xDEADBABEDEADBEEF))((*((T *)(0xDEADBABEC0FFEE01))));
@@ -40,7 +40,7 @@ void EVALUATOR_JIT_CALL test_func_cdbl()
 {
     typedef std::complex<double> T;
     typedef T(* F)(const T &);
-#if defined(EVALUATOR_JIT_X86)
+#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X32)
     (*((T *)(0xC0FFEE03))) = ((F)(0xDEADBEEF))((*((T *)(0xC0FFEE01))));
 #elif defined(EVALUATOR_JIT_X64)
     (*((T *)(0xDEADBABEC0FFEE03))) = ((F)(0xDEADBABEDEADBEEF))((*((T *)(0xDEADBABEC0FFEE01))));
@@ -311,6 +311,59 @@ void EVALUATOR_JIT_CALL test_func_cdbl()
                 "\x0F\x11\x01"                             // movups      xmmword ptr [rcx],xmm0
                 "\x48\x83\xC4\x38"                         // add         rsp,38h
                 "\xC3";                                    // ret
+
+    #else
+
+        const char * code_func_flt = NULL;
+        const char * code_func_dbl = NULL;
+        const char * code_func_cflt = NULL;
+        const char * code_func_cdbl = NULL;
+
+    #endif
+
+#elif defined(EVALUATOR_JIT_X32)
+    #if defined(EVALUATOR_JIT_SYSV_ABI)
+
+        const char * code_func_flt =
+                "\x83\xec\x08"             // sub    $0x8,%esp
+                "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                "\xbf\x01\xee\xff\xc0"     // mov    $0xc0ffee01,%edi
+                "\xff\xd0"                 // callq  *%rax
+                "\xb8\x03\xee\xff\xc0"     // mov    $0xc0ffee03,%eax
+                "\x67\xf3\x0f\x11\x00"     // movss  %xmm0,(%eax)
+                "\x83\xc4\x08"             // add    $0x8,%esp
+                "\xc3";                    // retq
+
+        const char * code_func_dbl =
+                "\x83\xec\x08"             // sub    $0x8,%esp
+                "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                "\xbf\x01\xee\xff\xc0"     // mov    $0xc0ffee01,%edi
+                "\xff\xd0"                 // callq  *%rax
+                "\xb8\x03\xee\xff\xc0"     // mov    $0xc0ffee03,%eax
+                "\x67\xf2\x0f\x11\x00"     // movsd  %xmm0,(%eax)
+                "\x83\xc4\x08"             // add    $0x8,%esp
+                "\xc3";                    // retq
+
+        const char * code_func_cflt =
+                "\x83\xec\x08"             // sub    $0x8,%esp
+                "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                "\xbf\x01\xee\xff\xc0"     // mov    $0xc0ffee01,%edi
+                "\xff\xd0"                 // callq  *%rax
+                "\xb8\x03\xee\xff\xc0"     // mov    $0xc0ffee03,%eax
+                "\x67\x66\x0f\xd6\x00"     // movq   %xmm0,(%eax)
+                "\x83\xc4\x08"             // add    $0x8,%esp
+                "\xc3";                    // retq
+
+        const char * code_func_cdbl =
+                "\x83\xec\x08"             // sub    $0x8,%esp
+                "\xb8\xef\xbe\xad\xde"     // mov    $0xdeadbeef,%eax
+                "\xbf\x01\xee\xff\xc0"     // mov    $0xc0ffee01,%edi
+                "\xff\xd0"                 // callq  *%rax
+                "\xb8\x03\xee\xff\xc0"     // mov    $0xc0ffee03,%eax
+                "\x67\xf2\x0f\x11\x00"     // movsd  %xmm0,(%eax)
+                "\x67\xf2\x0f\x11\x48\x08" // movsd  %xmm1,0x8(%eax)
+                "\x83\xc4\x08"             // add    $0x8,%esp
+                "\xc3";                    // retq
 
     #else
 

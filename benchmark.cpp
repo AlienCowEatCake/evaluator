@@ -41,6 +41,10 @@ int main(int argc, char * argv[])
     data << "Arch: x86" << endl;
     name << "x86_";
 #endif
+#if defined(EVALUATOR_JIT_X32)
+    data << "Arch: x32" << endl;
+    name << "x32_";
+#endif
 #if defined(EVALUATOR_JIT_MSVC_ABI)
     data << "ABI: MSVC" << endl;
     name << "abi-msvc";

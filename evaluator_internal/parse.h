@@ -346,7 +346,7 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 case TTYPE_OPER:
                 {
-                    char op, sym = tokens[token_pos_curr][0];
+                    char op = '\0', sym = tokens[token_pos_curr][0];
                     if(!st.empty()) op = st.top()[0];
                     while(!st.empty() && operators.find(op) != operators.end() &&
                           operators[sym].first <= operators[op].first)

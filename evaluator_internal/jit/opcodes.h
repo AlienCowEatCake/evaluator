@@ -49,6 +49,18 @@ void fld_ptr(char *& code_curr, const T * ptr)
     else
         *(code_curr++) = '\xdd';
     *(code_curr++) = '\x02';
+#elif defined(EVALUATOR_JIT_X32)
+    // mov    eax, 0xaaaaaaaa
+    *(code_curr++) = '\xb8';
+    const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+    memcpy(code_curr, & tmp_mem, sizeof(T*));
+    code_curr += sizeof(T*);
+    // fld    [dq]word ptr [eax]
+    if(typeid(T) == typeid(float))
+        *(code_curr++) = '\xd9';
+    else
+        *(code_curr++) = '\xdd';
+    *(code_curr++) = '\x00';
 #endif
 }
 
@@ -79,6 +91,18 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     else
         *(code_curr++) = '\xdd';
     *(code_curr++) = '\x1a';
+#elif defined(EVALUATOR_JIT_X32)
+    // mov    eax, 0xaaaaaaaa
+    *(code_curr++) = '\xb8';
+    const char * tmp_mem = reinterpret_cast<const char *>(ptr);
+    memcpy(code_curr, & tmp_mem, sizeof(T*));
+    code_curr += sizeof(T*);
+    // fstp    [dq]word ptr [eax]
+    if(typeid(T) == typeid(float))
+        *(code_curr++) = '\xd9';
+    else
+        *(code_curr++) = '\xdd';
+    *(code_curr++) = '\x18';
 #endif
 }
 

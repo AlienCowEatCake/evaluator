@@ -49,7 +49,7 @@ bool evaluator<T>::compile_extcall()
     char * curr = jit_code;
     T * jit_stack_curr = jit_stack;
 
-#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X64)
+#if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X64) || defined(EVALUATOR_JIT_X32)
 
     jit_oper_generator<T> f2arg(true);
     jit_func_generator<T> f1arg(true);
