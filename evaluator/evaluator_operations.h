@@ -6,8 +6,8 @@
 #include <utility>
 #include <map>
 #include <string>
-#include <typeinfo>
 #include "evaluator_internal/var_container.h"
+#include "evaluator_internal/type_detection.h"
 
 namespace evaluator_internal
 {
@@ -253,11 +253,13 @@ namespace evaluator_internal
     template<typename T>
     void init_constants(std::map<std::string, T> & consts_map)
     {
-        consts_map["pi"] = static_cast<T>(4) * eval_atan(static_cast<T>(1));
-        consts_map["e"] = eval_exp(static_cast<T>(1));
-        if(typeid(T) == typeid(std::complex<float>) ||
-           typeid(T) == typeid(std::complex<double>) ||
-           typeid(T) == typeid(std::complex<long double>))
+        T * type_test = NULL;
+        if(is_floating(type_test) || is_floating_complex(type_test))
+        {
+            consts_map["pi"] = static_cast<T>(4) * eval_atan(static_cast<T>(1));
+            consts_map["e"] = eval_exp(static_cast<T>(1));
+        }
+        if(is_floating_complex(type_test))
         {
             T complex_I = eval_sqrt(static_cast<T>(-1));
             consts_map["i"] = complex_I;
@@ -266,7 +268,8 @@ namespace evaluator_internal
     }
 
     // =============================================================================================
-}
+
+} // namespace evaluator_internal
 
 #endif // EVALUATOR_OPERATIONS_H
 

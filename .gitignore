@@ -72,4 +72,8 @@ Makefile*
 !/Makefile
 !/Makefile.mingw
 !/Makefile.nmake
+!/Makefile.macosx
+
+/bench
+/result_*.txt
 

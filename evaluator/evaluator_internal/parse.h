@@ -1,5 +1,5 @@
-#ifndef PARSE_H
-#define PARSE_H
+#ifndef EVALUATOR_PARSE_H
+#define EVALUATOR_PARSE_H
 
 /*
 // S := EXPR
@@ -88,15 +88,15 @@ bool evaluator<T>::parse(const std::string & str)
     using namespace std;
     using namespace evaluator_internal;
 
-    expression.clear();
-    error_string.clear();
-    status = true;
+    m_expression.clear();
+    m_error_string.clear();
+    m_status = true;
 #if !defined(EVALUATOR_JIT_DISABLE)
-    is_compiled = false;
+    m_is_compiled = false;
 #endif
 
     vector<string> tokens;
-    for(string::const_iterator it = str.begin(); it != str.end();)
+    for(string::const_iterator it = str.begin(), it_end = str.end(); it != it_end;)
     {
         string a;
         if((*it >= '0' && *it <= '9') || *it == '.' || *it == ',')
@@ -132,18 +132,18 @@ bool evaluator<T>::parse(const std::string & str)
         {
             while(it != str.end() && *it != '(' && *it != ')' && *it != '\f' && *it != '\v' &&
                   *it != ' ' && *it != '\t' && *it != '\0' && *it != '\r' && *it != '\n' &&
-                  operators.find(*it) == operators.end())
+                  m_operators.find(*it) == m_operators.end())
             {
                 a.push_back(*(it++));
             }
             string b(a);
             transform(a.begin(), a.end(), a.begin(), ::tolower);
-            if(functions.find(a) != functions.end() || constants.find(a) != constants.end())
+            if(m_functions.find(a) != m_functions.end() || m_constants.find(a) != m_constants.end())
                 tokens.push_back(a);
             else
                 tokens.push_back(b);
         }
-        else if(operators.find(*it) != operators.end() || *it == '(' || *it == ')')
+        else if(m_operators.find(*it) != m_operators.end() || *it == '(' || *it == ')')
         {
             a.push_back(*(it++));
             transform(a.begin(), a.end(), a.begin(), ::tolower);
@@ -156,16 +156,16 @@ bool evaluator<T>::parse(const std::string & str)
         }
         else
         {
-            status = false;
-            error_string = string("Unexpected symbol `") + string().assign(1, *it) + string("`!");
+            m_status = false;
+            m_error_string = string("Unexpected symbol `") + string().assign(1, *it) + string("`!");
             return false;
         }
     }
 
     if(tokens.size() <= 0)
     {
-        status = false;
-        error_string = "No tokens!";
+        m_status = false;
+        m_error_string = "No tokens!";
         return false;
     }
 
@@ -191,8 +191,8 @@ bool evaluator<T>::parse(const std::string & str)
     for(bool flag_continue = true; flag_continue;)
     {
         bool good_token = false;
-        for(vector<string>::const_iterator it = transition_table[table_pos_curr].Terminals.begin();
-            !good_token && it != transition_table[table_pos_curr].Terminals.end(); ++it)
+        for(vector<string>::const_iterator it = m_transition_table[table_pos_curr].Terminals.begin(),
+            it_end = m_transition_table[table_pos_curr].Terminals.end(); !good_token && it != it_end; ++it)
         {
             if(token_pos_curr < tokens.size())
             {
@@ -206,7 +206,7 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 else if(*it == "func")
                 {
-                    if(functions.find(tokens[token_pos_curr]) != functions.end())
+                    if(m_functions.find(tokens[token_pos_curr]) != m_functions.end())
                     {
                         good_token = true;
                         ttype_curr = TTYPE_FUNC;
@@ -214,7 +214,7 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 else if(*it == "oper")
                 {
-                    if(operators.find(tokens[token_pos_curr][0]) != operators.end())
+                    if(m_operators.find(tokens[token_pos_curr][0]) != m_operators.end())
                     {
                         good_token = true;
                         ttype_curr = TTYPE_OPER;
@@ -231,9 +231,9 @@ bool evaluator<T>::parse(const std::string & str)
                     bool first_number = curr_tok[0] >= '0' && curr_tok[0] <= '9';
                     bool first_dot = curr_tok[0] == '.';
                     bool second_number = curr_tok[1] >= '0' && curr_tok[1] <= '9';
-                    bool next_operator = !last_token && operators.find(next_tok[0]) != operators.end();
+                    bool next_operator = !last_token && m_operators.find(next_tok[0]) != m_operators.end();
                     bool next_bracket = !last_token && next_tok[0] == ')';
-                    bool is_constant = constants.find(curr_tok) != constants.end();
+                    bool is_constant = m_constants.find(curr_tok) != m_constants.end();
 
                     if(*it == "var")
                     {
@@ -285,9 +285,9 @@ bool evaluator<T>::parse(const std::string & str)
 
         if(good_token)
         {
-            if(transition_table[table_pos_curr].Stack)
+            if(m_transition_table[table_pos_curr].Stack)
                 table_stack.push(table_pos_curr + 1);
-            if(transition_table[table_pos_curr].Accept)
+            if(m_transition_table[table_pos_curr].Accept)
             {
                 switch(ttype_curr)
                 {
@@ -301,15 +301,15 @@ bool evaluator<T>::parse(const std::string & str)
                     }
                     T c;
                     typename std::map<std::string, T>::const_iterator
-                            it = constants.find(tokens[token_pos_curr]);
-                    if(it == constants.end())
+                            it = m_constants.find(tokens[token_pos_curr]);
+                    if(it == m_constants.end())
                     {
                         stringstream b(a);
                         b >> c;
                     }
                     else
                         c = it->second;
-                    expression.push_back(evaluator_object<T>(a, c));
+                    m_expression.push_back(evaluator_object<T>(a, c));
                     break;
                 }
                 case TTYPE_VAR:
@@ -318,17 +318,17 @@ bool evaluator<T>::parse(const std::string & str)
                     if(unary_minus)
                     {
                         T m_one = static_cast<T>(-1);
-                        expression.push_back(evaluator_object<T>("-1", m_one));
+                        m_expression.push_back(evaluator_object<T>("-1", m_one));
                         st.push("*");
                         unary_minus = false;
                     }
-                    typename map<string, var_container<T> >::const_iterator itc = variables.find(a);
-                    if(itc == variables.end())
+                    typename map<string, var_container<T> >::const_iterator itc = m_variables.find(a);
+                    if(itc == m_variables.end())
                     {
-                        variables[a].value() = incorrect_number(T());
-                        itc = variables.find(a);
+                        m_variables[a].value() = incorrect_number(T());
+                        itc = m_variables.find(a);
                     }
-                    expression.push_back(evaluator_object<T>(a, itc->second.pointer()));
+                    m_expression.push_back(evaluator_object<T>(a, itc->second.pointer()));
                     break;
                 }
                 case TTYPE_BR_OPEN:
@@ -337,7 +337,7 @@ bool evaluator<T>::parse(const std::string & str)
                     if(unary_minus)
                     {
                         T m_one = static_cast<T>(-1);
-                        expression.push_back(evaluator_object<T>("-1", m_one));
+                        m_expression.push_back(evaluator_object<T>("-1", m_one));
                         st.push("*");
                         unary_minus = false;
                     }
@@ -348,11 +348,11 @@ bool evaluator<T>::parse(const std::string & str)
                 {
                     char op = '\0', sym = tokens[token_pos_curr][0];
                     if(!st.empty()) op = st.top()[0];
-                    while(!st.empty() && operators.find(op) != operators.end() &&
-                          operators[sym].first <= operators[op].first)
+                    while(!st.empty() && m_operators.find(op) != m_operators.end() &&
+                          m_operators[sym].first <= m_operators[op].first)
                     {
-                        expression.push_back(evaluator_object<T>(st.top(),
-                                                     operators.find(st.top()[0])->second.second));
+                        m_expression.push_back(evaluator_object<T>(st.top(),
+                                                     m_operators.find(st.top()[0])->second.second));
                         st.pop();
                         if(!st.empty()) op = st.top()[0];
                     }
@@ -363,21 +363,21 @@ bool evaluator<T>::parse(const std::string & str)
                 {
                     while(!st.empty() && st.top() != "(")
                     {
-                        expression.push_back(evaluator_object<T>(st.top(),
-                                                     operators.find(st.top()[0])->second.second));
+                        m_expression.push_back(evaluator_object<T>(st.top(),
+                                                     m_operators.find(st.top()[0])->second.second));
                         st.pop();
                     }
                     if(st.empty())
                     {
-                        status = false;
-                        error_string = "Wrong brackets balance!";
+                        m_status = false;
+                        m_error_string = "Wrong brackets balance!";
                         return false;
                     }
                     st.pop();
-                    if(!st.empty() && functions.find(st.top()) != functions.end())
+                    if(!st.empty() && m_functions.find(st.top()) != m_functions.end())
                     {
-                        expression.push_back(evaluator_object<T>(st.top(),
-                                                     functions.find(st.top())->second));
+                        m_expression.push_back(evaluator_object<T>(st.top(),
+                                                     m_functions.find(st.top())->second));
                         st.pop();
                     }
                     break;
@@ -387,7 +387,7 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 token_pos_curr++;
             }
-            if(transition_table[table_pos_curr].Return)
+            if(m_transition_table[table_pos_curr].Return)
             {
                 if(table_stack.size() > 0)
                 {
@@ -398,17 +398,17 @@ bool evaluator<T>::parse(const std::string & str)
                     flag_continue = false;
             }
             else
-                table_pos_curr = (size_t)transition_table[table_pos_curr].Jump;
+                table_pos_curr = (size_t)m_transition_table[table_pos_curr].Jump;
         }
         else
         {
-            if(transition_table[table_pos_curr].Error)
+            if(m_transition_table[table_pos_curr].Error)
             {
-                status = false;
+                m_status = false;
                 if(token_pos_curr < tokens.size())
-                    error_string = string("Bad token `") + tokens[token_pos_curr] + string("`!");
+                    m_error_string = string("Bad token `") + tokens[token_pos_curr] + string("`!");
                 else
-                    error_string = "Unexpected end of string!";
+                    m_error_string = "Unexpected end of string!";
                 return false;
             }
             else
@@ -418,21 +418,21 @@ bool evaluator<T>::parse(const std::string & str)
         }
     }
 
-    while(status && !st.empty())
+    while(m_status && !st.empty())
     {
-        if(operators.find(st.top()[0]) == operators.end())
+        if(m_operators.find(st.top()[0]) == m_operators.end())
         {
-            status = false;
-            error_string = "Wrong expression!";
+            m_status = false;
+            m_error_string = "Wrong expression!";
             break;
         }
-        expression.push_back(evaluator_object<T>(st.top(),
-                                     operators.find(st.top()[0])->second.second));
+        m_expression.push_back(evaluator_object<T>(st.top(),
+                                     m_operators.find(st.top()[0])->second.second));
         st.pop();
     }
 
-    return status;
+    return m_status;
 }
 
-#endif // PARSE_H
+#endif // EVALUATOR_PARSE_H
 

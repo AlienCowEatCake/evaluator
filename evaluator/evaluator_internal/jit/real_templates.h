@@ -1,5 +1,5 @@
-#ifndef REAL_TEMPLATES_H
-#define REAL_TEMPLATES_H
+#ifndef EVALUATOR_REAL_TEMPLATES_H
+#define EVALUATOR_REAL_TEMPLATES_H
 
 #include "opcodes.h"
 
@@ -62,7 +62,7 @@ void real_atanh(char *& code_curr);
 // Output: st(0) = arg(X)
 void real_arg(char *& code_curr);
 
-}
+} // namespace evaluator_internal_jit
 
-#endif // REAL_TEMPLATES_H
+#endif // EVALUATOR_REAL_TEMPLATES_H
 

@@ -1,5 +1,5 @@
-#ifndef VAR_CONTAINER_H
-#define VAR_CONTAINER_H
+#ifndef EVALUATOR_VAR_CONTAINER_H
+#define EVALUATOR_VAR_CONTAINER_H
 
 namespace evaluator_internal
 {
@@ -7,59 +7,59 @@ namespace evaluator_internal
 // Auto-allocatable container for variables.
 template<typename T> class var_container
 {
-protected:
+private:
 
-    T * val;
+    T * m_value;
 
 public:
 
     inline const T & value() const
     {
-        return * val;
+        return * m_value;
     }
 
     inline T & value()
     {
-        return * val;
+        return * m_value;
     }
 
     inline const T * pointer() const
     {
-        return val;
+        return m_value;
     }
 
     inline T * pointer()
     {
-        return val;
+        return m_value;
     }
 
-    var_container(const T & new_val = T())
+    var_container(const T & new_value = T())
     {
-        val = new T(new_val);
+        m_value = new T(new_value);
     }
 
     var_container(const var_container & other)
     {
-        val = new T(other.value());
+        m_value = new T(other.value());
     }
 
     const var_container & operator = (const var_container & other)
     {
         if(this != & other)
         {
-            val = new T;
-            * val = other.value();
+            m_value = new T;
+            * m_value = other.value();
         }
         return * this;
     }
 
     ~var_container()
     {
-        delete val;
+        delete m_value;
     }
 };
 
-}
+} // namespace evaluator_internal
 
-#endif // VAR_CONTAINER_H
+#endif // EVALUATOR_VAR_CONTAINER_H
 

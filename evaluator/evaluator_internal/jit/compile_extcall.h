@@ -1,17 +1,17 @@
-#ifndef COMPILE_EXTCALL_H
-#define COMPILE_EXTCALL_H
+#ifndef EVALUATOR_COMPILE_EXTCALL_H
+#define EVALUATOR_COMPILE_EXTCALL_H
 
 #include <vector>
 #include <string>
 #include <cstring>
 #include <cstdlib>
-#include <typeinfo>
 #include <complex>
 #include <sstream>
 #include "common.h"
 #include "opcodes.h"
 #include "func_templates.h"
 #include "oper_templates.h"
+#include "../type_detection.h"
 #include "../../evaluator.h"
 
 // Compile expression, all functions will be called from 'functions' and 'operators' containers
@@ -25,29 +25,29 @@ bool evaluator<T>::compile_extcall()
 
     if(!is_parsed())
     {
-        error_string = "Not parsed!";
+        m_error_string = "Not parsed!";
         return false;
     }
 
-    if(!jit_code || !jit_code_size)
+    if(!m_jit_code || !m_jit_code_size)
     {
-        jit_code_size = 128 * 1024; // 128 KiB
-        jit_code = (char *)exec_alloc(jit_code_size);
-        size_t call_addr = (size_t)(& jit_func);
-        size_t code_addr = (size_t)(& jit_code);
+        m_jit_code_size = 128 * 1024; // 128 KiB
+        m_jit_code = (char *)exec_alloc(m_jit_code_size);
+        size_t call_addr = (size_t)(& m_jit_func);
+        size_t code_addr = (size_t)(& m_jit_code);
         memcpy((void *)call_addr, (void *)code_addr, sizeof(void *));
     }
-    memset(jit_code, '\xc3', jit_code_size);
+    memset(m_jit_code, '\xc3', m_jit_code_size);
 
-    if(!jit_stack || !jit_stack_size)
+    if(!m_jit_stack || !m_jit_stack_size)
     {
-        jit_stack_size = 128 * 1024 / sizeof(T); // 128 KiB
-        jit_stack = new T [jit_stack_size];
+        m_jit_stack_size = 128 * 1024 / sizeof(T); // 128 KiB
+        m_jit_stack = new T [m_jit_stack_size];
     }
-    memset(jit_stack, 0, jit_stack_size);
+    memset(m_jit_stack, 0, m_jit_stack_size);
 
-    char * curr = jit_code;
-    T * jit_stack_curr = jit_stack;
+    char * curr = m_jit_code;
+    T * jit_stack_curr = m_jit_stack;
 
 #if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X64) || defined(EVALUATOR_JIT_X32)
 
@@ -55,16 +55,15 @@ bool evaluator<T>::compile_extcall()
     jit_func_generator<T> f1arg(true);
     if(!f2arg.check() || !f1arg.check())
     {
-        error_string = string("Unsupported calling convention for type `") +
-                       typeid(T).name() + string("`!");
+        m_error_string = string("Unsupported calling convention for type `") +
+                         get_type_name(static_cast<T*>(NULL)) + string("`!");
         return false;
     }
 
-    if((typeid(T) == typeid(float) && sizeof(float) == 4) ||
-       (typeid(T) == typeid(double) && sizeof(double) == 8))
+    if(is_float(jit_stack_curr) || is_double(jit_stack_curr))
     {
         for(typename vector<evaluator_object<T> >::const_iterator
-            it = expression.begin(); it != expression.end(); ++it)
+            it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_constant() || it->is_variable())
             {
@@ -87,11 +86,10 @@ bool evaluator<T>::compile_extcall()
 
         jit_stack_curr--;
     }
-    else if((typeid(T) == typeid(complex<float>) && sizeof(float) == 4) ||
-            (typeid(T) == typeid(complex<double>) && sizeof(double) == 8))
+    else if(is_complex_float(jit_stack_curr) || is_complex_double(jit_stack_curr))
     {
         for(typename vector<evaluator_object<T> >::const_iterator
-            it = expression.begin(); it != expression.end(); ++it)
+            it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_constant() || it->is_variable())
             {
@@ -118,7 +116,7 @@ bool evaluator<T>::compile_extcall()
     }
     else
     {
-        error_string = "Unsupported type `" + string(typeid(T).name()) + "`!";
+        m_error_string = "Unsupported type `" + get_type_name(static_cast<T*>(NULL)) + "`!";
         return false;
     }
 
@@ -126,25 +124,25 @@ bool evaluator<T>::compile_extcall()
 
 #else
     (void)(curr);
-    error_string = "Unsupported arch!";
+    m_error_string = "Unsupported arch!";
     return false;
 #endif
 
-    if(jit_stack_curr != jit_stack)
+    if(jit_stack_curr != m_jit_stack)
     {
         stringstream sst;
-        sst << "Stack size equal " << (size_t)(jit_stack_curr - jit_stack);
-        error_string = sst.str();
+        sst << "Stack size equal " << (size_t)(jit_stack_curr - m_jit_stack);
+        m_error_string = sst.str();
         return false;
     }
 
-    is_compiled = true;
+    m_is_compiled = true;
     return true;
 #else
-    error_string = "JIT is disabled!";
+    m_error_string = "JIT is disabled!";
     return false;
 #endif
 }
 
-#endif // COMPILE_EXTCALL_H
+#endif // EVALUATOR_COMPILE_EXTCALL_H
 

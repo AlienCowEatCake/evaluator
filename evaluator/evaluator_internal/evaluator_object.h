@@ -9,7 +9,7 @@ namespace evaluator_internal
 // The universal evaluator object. It may be operator, function, variable or constant.
 template<typename T> class evaluator_object
 {
-protected:
+private:
 
     // Allowed object types
     enum obj_type
@@ -144,7 +144,7 @@ public:
     }
 };
 
-}
+} // namespace evaluator_internal
 
 #endif // EVALUATOR_OBJECT_H
 

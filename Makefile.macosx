@@ -1,6 +1,6 @@
-CXX ?= g++
+CXX ?= clang++
 CXXFLAGS ?= -Wall -Wextra -ansi -pedantic -pipe -O3 -march=native -mtune=native -DNDEBUG
-LDFLAGS ?= -Wl,-O1 -s -lrt
+LDFLAGS ?=
 EXECUTABLE = bench
 LINK.o = $(LINK.cc)
 SOURCES = \

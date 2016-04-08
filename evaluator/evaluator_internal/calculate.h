@@ -1,5 +1,5 @@
-#ifndef CALCULATE_H
-#define CALCULATE_H
+#ifndef EVALUATOR_CALCULATE_H
+#define EVALUATOR_CALCULATE_H
 
 #include <stack>
 #include <string>
@@ -17,15 +17,15 @@ bool evaluator<T>::calculate(T & result)
 
     if(!is_parsed())
     {
-        error_string = "Not parsed!";
+        m_error_string = "Not parsed!";
         return false;
     }
 
 #if !defined(EVALUATOR_JIT_DISABLE)
-    if(is_compiled)
+    if(m_is_compiled)
     {
-        jit_func();
-        result = jit_stack[0];
+        m_jit_func();
+        result = m_jit_stack[0];
         return true;
     }
 #endif
@@ -33,7 +33,7 @@ bool evaluator<T>::calculate(T & result)
     stack<T> st;
 
     for(typename vector<evaluator_object<T> >::const_iterator
-        it = expression.begin(); it != expression.end(); ++it)
+        it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
     {
         if(it->is_constant())
         {
@@ -50,7 +50,7 @@ bool evaluator<T>::calculate(T & result)
             {
                 stringstream sst;
                 sst << "Constant `" << it->str() << "` must be defined!";
-                error_string = sst.str();
+                m_error_string = sst.str();
                 return false;
             }
         }
@@ -76,12 +76,12 @@ bool evaluator<T>::calculate(T & result)
     {
         stringstream sst;
         sst << "Stack size equal " << st.size();
-        error_string = sst.str();
+        m_error_string = sst.str();
         return false;
     }
     result = st.top();
     return true;
 }
 
-#endif // CALCULATE_H
+#endif // EVALUATOR_CALCULATE_H
 

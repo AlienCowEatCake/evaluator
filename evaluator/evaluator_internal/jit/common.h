@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef EVALUATOR_COMMON_H
+#define EVALUATOR_COMMON_H
 
 //#define EVALUATOR_JIT_DISABLE
 
@@ -106,8 +106,8 @@ namespace evaluator_internal_jit
 void * exec_alloc(size_t size);
 void exec_dealloc(void * data, size_t size);
 
-}
+} // namespace evaluator_internal_jit
 
 
-#endif // COMMON_H
+#endif // EVALUATOR_COMMON_H
 

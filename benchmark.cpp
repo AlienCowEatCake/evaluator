@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
-#include "evaluator.h"
+#include "evaluator/evaluator.h"
 
 using namespace std;
 
@@ -466,6 +466,15 @@ double rand_uniform(double a, double b)
 unsigned long mtime()
 {
     return GetTickCount();
+}
+#elif defined(__MACH__)
+#include <mach/mach_time.h>
+unsigned long mtime()
+{
+    mach_timebase_info_data_t timebase;
+    mach_timebase_info(& timebase);
+    uint64_t time = mach_absolute_time();
+    return (unsigned long)((time * (uint64_t)timebase.numer) / ((uint64_t)timebase.denom * (uint64_t)1000000));
 }
 #else
 unsigned long mtime()

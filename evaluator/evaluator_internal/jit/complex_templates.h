@@ -1,5 +1,5 @@
-#ifndef COMPLEX_TEMPLATES_H
-#define COMPLEX_TEMPLATES_H
+#ifndef EVALUATOR_COMPLEX_TEMPLATES_H
+#define EVALUATOR_COMPLEX_TEMPLATES_H
 
 #include "opcodes.h"
 #include "real_templates.h"
@@ -1031,7 +1031,7 @@ void complex_atanh(char *& code_curr, const T * in, const T * out, const T * tmp
     fstp_ptr_imag(code_curr, out);
 }
 
-}
+} // namespace evaluator_internal_jit
 
-#endif // COMPLEX_TEMPLATES_H
+#endif // EVALUATOR_COMPLEX_TEMPLATES_H
 

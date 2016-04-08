@@ -1,5 +1,5 @@
-#ifndef SIMPLIFY_H
-#define SIMPLIFY_H
+#ifndef EVALUATOR_SIMPLIFY_H
+#define EVALUATOR_SIMPLIFY_H
 
 #include <deque>
 #include <sstream>
@@ -16,7 +16,7 @@ bool evaluator<T>::simplify()
 
     if(!is_parsed())
     {
-        error_string = "Not parsed!";
+        m_error_string = "Not parsed!";
         return false;
     }
 
@@ -27,7 +27,7 @@ bool evaluator<T>::simplify()
         was_changed = false;
 
         for(typename vector<evaluator_object<T> >::iterator
-            it = expression.begin(); it != expression.end(); ++it)
+            it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_operator())
             {
@@ -86,13 +86,13 @@ bool evaluator<T>::simplify()
             }
         }
 
-        if(expression.size() > dq.size())
+        if(m_expression.size() > dq.size())
         {
-            expression.clear();
-            expression.reserve(dq.size());
+            m_expression.clear();
+            m_expression.reserve(dq.size());
             while(!dq.empty())
             {
-                expression.push_back(dq.front());
+                m_expression.push_back(dq.front());
                 dq.pop_front();
             }
             was_changed = true;
@@ -103,7 +103,7 @@ bool evaluator<T>::simplify()
         }
 
         for(typename vector<evaluator_object<T> >::iterator
-            it = expression.begin(); it != expression.end(); ++it)
+            it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_operator())
             {
@@ -162,13 +162,13 @@ bool evaluator<T>::simplify()
             }
         }
 
-        if(expression.size() > dq.size())
+        if(m_expression.size() > dq.size())
         {
-            expression.clear();
-            expression.reserve(dq.size());
+            m_expression.clear();
+            m_expression.reserve(dq.size());
             while(!dq.empty())
             {
-                expression.push_back(dq.front());
+                m_expression.push_back(dq.front());
                 dq.pop_front();
             }
             was_changed = true;
@@ -182,5 +182,5 @@ bool evaluator<T>::simplify()
     return true;
 }
 
-#endif // SIMPLIFY_H
+#endif // EVALUATOR_SIMPLIFY_H
 

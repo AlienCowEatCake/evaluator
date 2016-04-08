@@ -1,9 +1,10 @@
-#ifndef OPCODES_H
-#define OPCODES_H
+#ifndef EVALUATOR_OPCODES_H
+#define EVALUATOR_OPCODES_H
 
-#include <typeinfo>
 #include <complex>
+#include <cassert>
 #include "common.h"
+#include "../type_detection.h"
 
 // http://www.intel-assembler.it/portale/5/The-8087-Instruction-Set/A-one-line-description-of-x87-instructions.asp
 
@@ -26,12 +27,15 @@ inline void ret(char *& code_curr)
 template<typename T>
 void fld_ptr(char *& code_curr, const T * ptr)
 {
+    using namespace evaluator_internal;
 #if defined(EVALUATOR_JIT_X86)
     // fld    [dq]word ptr ds:[ptr]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x05';
     const char * tmp_mem = reinterpret_cast<const char *>(ptr);
     memcpy(code_curr, & tmp_mem, sizeof(T*));
@@ -44,10 +48,12 @@ void fld_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fld    [dq]word ptr [rdx]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x02';
 #elif defined(EVALUATOR_JIT_X32)
     // mov    eax, 0xaaaaaaaa
@@ -56,10 +62,12 @@ void fld_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fld    [dq]word ptr [eax]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x00';
 #endif
 }
@@ -68,12 +76,15 @@ void fld_ptr(char *& code_curr, const T * ptr)
 template<typename T>
 void fstp_ptr(char *& code_curr, const T * ptr)
 {
+    using namespace evaluator_internal;
 #if defined(EVALUATOR_JIT_X86)
     // fstp    [dq]word ptr ds:[ptr]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x1d';
     const char * tmp_mem = reinterpret_cast<const char *>(ptr);
     memcpy(code_curr, & tmp_mem, sizeof(T*));
@@ -86,10 +97,12 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fstp    [dq]word ptr [rdx]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x1a';
 #elif defined(EVALUATOR_JIT_X32)
     // mov    eax, 0xaaaaaaaa
@@ -98,10 +111,12 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fstp    [dq]word ptr [eax]
-    if(typeid(T) == typeid(float))
+    if(is_float(ptr))
         *(code_curr++) = '\xd9';
-    else
+    else if(is_double(ptr))
         *(code_curr++) = '\xdd';
+    else
+        assert(false);
     *(code_curr++) = '\x18';
 #endif
 }
@@ -541,8 +556,8 @@ inline void fstp_ptr_imag(char *& code_curr, const T * ptr)
     crash(code_curr);
 }
 
-}
+} // namespace evaluator_internal_jit
 
 
-#endif // OPCODES_H
+#endif // EVALUATOR_OPCODES_H
 

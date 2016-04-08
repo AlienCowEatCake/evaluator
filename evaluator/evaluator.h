@@ -2,9 +2,15 @@
 #define EVALUATOR_H
 
 /*
+// This is the module to parse, simplify and evaluate expressions with support of a JIT-compilation
+//
+// CC0 1.0 Universal License
+// <http://creativecommons.org/publicdomain/zero/1.0/>
+//
+//
 // Usage example:
 //
-// #include "evaluator.h"
+// #include "evaluator/evaluator.h"
 // ...
 // evaluator<double> p;
 // if(!p.parse("exp(-(0.5-x)*(0.5-x)-(0.5-z)*(0.5-z))"))
@@ -53,35 +59,35 @@ public:
 protected:
 
     // State transition table
-    std::vector<evaluator_internal::transition_table_record> transition_table;
+    std::vector<evaluator_internal::transition_table_record> m_transition_table;
     // Expression, Reverse Polish notation
-    std::vector<evaluator_internal::evaluator_object<T> > expression;
+    std::vector<evaluator_internal::evaluator_object<T> > m_expression;
     // Container: [function name]->function pointer
-    std::map<std::string, func_type> functions;
+    std::map<std::string, func_type> m_functions;
     // Container: [variable name]->pointer to var_container
-    std::map<std::string, evaluator_internal::var_container<T> > variables;
+    std::map<std::string, evaluator_internal::var_container<T> > m_variables;
     // Container: [constant name]->constant value
-    std::map<std::string, T> constants;
+    std::map<std::string, T> m_constants;
     // Container: [operator name]->pair(priority, operator pointer)
-    std::map<char, std::pair<unsigned short int, oper_type> > operators;
+    std::map<char, std::pair<unsigned short int, oper_type> > m_operators;
     // Current parsing status: true is good, false is bad
-    bool status;
-    // Error description if status == false
-    std::string error_string;
+    bool m_status;
+    // Error description if m_status == false
+    std::string m_error_string;
 
 #if !defined(EVALUATOR_JIT_DISABLE)
     // Current conpiling status: true is compiled, false is not compiled
-    bool is_compiled;
+    bool m_is_compiled;
     // Executable memory for bytecode
-    char * volatile jit_code;
+    char * volatile m_jit_code;
     // Function pointer to same memory
-    void(EVALUATOR_JIT_CALL * jit_func)();
+    void(EVALUATOR_JIT_CALL * m_jit_func)();
     // Size of allocated executable memory
-    size_t jit_code_size;
+    size_t m_jit_code_size;
     // Memory for stack, used in compiled code
-    T * volatile jit_stack;
+    T * volatile m_jit_stack;
     // Size of allocated memory for stack
-    size_t jit_stack_size;
+    size_t m_jit_stack_size;
 #endif
 
     // Return incorrect big number (uninitialized variable)
@@ -109,19 +115,19 @@ public:
     // Get error description
     inline const std::string & get_error() const
     {
-        return error_string;
+        return m_error_string;
     }
 
     // Get current parsing status
     inline bool is_parsed() const
     {
-        return status;
+        return m_status;
     }
 
     // Set new value 'value' for variable with name 'name'
     inline void set_var(const std::string & name, const T & value)
     {
-        variables[name].value() = value;
+        m_variables[name].value() = value;
     }
 
     // Reset all variables
