@@ -1,5 +1,5 @@
 CXX ?= clang++
-CXXFLAGS ?= -Wall -Wextra -ansi -pedantic -pipe -O3 -march=native -mtune=native -DNDEBUG
+CXXFLAGS ?= -Wall -Wextra -ansi -pedantic -pipe -O3 -march=native -mtune=native -DNDEBUG -Wno-long-long
 LDFLAGS ?=
 EXECUTABLE = bench
 LINK.o = $(LINK.cc)

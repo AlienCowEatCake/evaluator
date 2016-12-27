@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_FUNC_TEMPLATES_H
+#if !defined(EVALUATOR_FUNC_TEMPLATES_H)
 #define EVALUATOR_FUNC_TEMPLATES_H
 
 #include <complex>
@@ -33,12 +33,12 @@ private:
     const jit_func_generator & operator = (const jit_func_generator & other);
     jit_func_generator(const jit_func_generator & other);
 
-    size_t m_code_len;
+    std::size_t m_code_len;
     char * m_raw_data;
-    size_t m_offset_return;
-    size_t m_offset_return_2;
-    size_t m_offset_arg;
-    size_t m_offset_func;
+    std::size_t m_offset_return;
+    std::size_t m_offset_return_2;
+    std::size_t m_offset_arg;
+    std::size_t m_offset_func;
     bool m_status;
 
 public:
@@ -46,56 +46,41 @@ public:
     jit_func_generator(bool active)
     {
         using namespace evaluator_internal;
-        T * type_test = NULL;
         m_status = active;
         m_raw_data = NULL;
         m_code_len = 0;
         m_offset_return = m_offset_return_2 = m_offset_arg = m_offset_func = 0;
         if(!active) return;
         const char * tc = NULL;
-        if(is_double(type_test))
+        if(is_double<T>())
             tc = code_func_dbl;
-        else if(is_float(type_test))
+        else if(is_float<T>())
             tc = code_func_flt;
-        else if(is_complex_double(type_test))
+        else if(is_complex_double<T>())
             tc = code_func_cdbl;
-        else if(is_complex_float(type_test))
+        else if(is_complex_float<T>())
             tc = code_func_cflt;
         else
             assert(false);
 
         if(!tc)
         {
-            if(is_double(type_test))
+            void(EVALUATOR_JIT_CALL * func)() = NULL;
+            if(is_double<T>())
+                func = test_func_dbl;
+            else if(is_float<T>())
+                func = test_func_flt;
+            else if(is_complex_double<T>())
+                func = test_func_cdbl;
+            else if(is_complex_float<T>())
+                func = test_func_cflt;
+            assert(func);
+            if(func)
             {
-                void(EVALUATOR_JIT_CALL * func)() = test_func_dbl;
-                size_t call_addr = (size_t)(& func);
-                size_t code_addr = (size_t)(& tc);
-                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
+                std::size_t call_addr = reinterpret_cast<std::size_t>(& func);
+                std::size_t code_addr = reinterpret_cast<std::size_t>(& tc);
+                memcpy(reinterpret_cast<void *>(code_addr), reinterpret_cast<void *>(call_addr), sizeof(void *));
             }
-            else if(is_float(type_test))
-            {
-                void(EVALUATOR_JIT_CALL * func)() = test_func_flt;
-                size_t call_addr = (size_t)(& func);
-                size_t code_addr = (size_t)(& tc);
-                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
-            }
-            else if(is_complex_double(type_test))
-            {
-                void(EVALUATOR_JIT_CALL * func)() = test_func_cdbl;
-                size_t call_addr = (size_t)(& func);
-                size_t code_addr = (size_t)(& tc);
-                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
-            }
-            else if(is_complex_float(type_test))
-            {
-                void(EVALUATOR_JIT_CALL * func)() = test_func_cflt;
-                size_t call_addr = (size_t)(& func);
-                size_t code_addr = (size_t)(& tc);
-                memcpy((void *)code_addr, (void *)call_addr, sizeof(void *));
-            }
-            else
-                assert(false);
         }
 
         if(!tc)
@@ -105,7 +90,7 @@ public:
         }
         while(tc[0] == '\xe9') // jump
         {
-            size_t offset = 0;
+            std::size_t offset = 0;
             memcpy(&offset, tc + 1, 4);
             tc += offset + 5;
         }
@@ -115,9 +100,9 @@ public:
             tcc++;
             m_code_len++;
         }
-        m_raw_data = new char [m_code_len + 10 * sizeof(size_t)];
+        m_raw_data = new char [m_code_len + 10 * sizeof(std::size_t)];
         memcpy(m_raw_data, tc, m_code_len);
-        for(size_t i = 0; i < m_code_len; i++)
+        for(std::size_t i = 0; i < m_code_len; i++)
         {
             // return pointer - 0xC0FFEE03
             if(m_raw_data[i] == '\x03' && m_raw_data[i + 1] == '\xee' &&
@@ -151,13 +136,13 @@ public:
     void call(char *& code_curr, T(* const func)(const T &), const T * arg, const T * ret) const
     {
         memcpy(code_curr, m_raw_data, m_code_len);
-        memcpy(code_curr + m_offset_func, &func, sizeof(size_t));
-        memcpy(code_curr + m_offset_arg, &arg, sizeof(size_t));
-        memcpy(code_curr + m_offset_return, &ret, sizeof(size_t));
+        memcpy(code_curr + m_offset_func, &func, sizeof(std::size_t));
+        memcpy(code_curr + m_offset_arg, &arg, sizeof(std::size_t));
+        memcpy(code_curr + m_offset_return, &ret, sizeof(std::size_t));
         if(m_offset_return_2)
         {
-            const void * ret2 = (const void *)(((size_t)(ret)) + (sizeof(T) / 2));
-            memcpy(code_curr + m_offset_return_2, &ret2, sizeof(size_t));
+            const void * ret2 = reinterpret_cast<const void *>(reinterpret_cast<std::size_t>(ret) + sizeof(T) / 2);
+            memcpy(code_curr + m_offset_return_2, &ret2, sizeof(std::size_t));
         }
         code_curr += m_code_len;
     }

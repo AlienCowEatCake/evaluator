@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_XYZ_H
+#if !defined(EVALUATOR_XYZ_H)
 #define EVALUATOR_XYZ_H
 
 /*
@@ -8,20 +8,20 @@
 // ...
 // evaluator_xyz<double> e;
 // if(!e.parse("exp(-(0.5-x)*(0.5-x)-(0.5-z)*(0.5-z))"))
-//     cerr << e.get_error() << endl;
+//     std::cerr << e.get_error() << std::endl;
 // else if(!e.simplify()) // simplify is optional step
-//     cerr << e.get_error() << endl;
+//     std::cerr << e.get_error() << std::endl;
 // else
 // {
 //     if(!e.compile()) // compile is optional step
-//         cerr << e.get_error() << endl;
+//         std::cerr << e.get_error() << std::endl;
 //     e.set_x(0.4);
 //     e.set_z(0.8);
 //     double result;
 //     if(!e.calculate(result))
-//         cerr << e.get_error() << endl;
+//         std::cerr << e.get_error() << std::endl;
 //     else
-//         cout << result << endl;
+//         std::cout << result << std::endl;
 // }
 */
 

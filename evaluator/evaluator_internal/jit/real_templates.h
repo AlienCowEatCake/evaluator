@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_REAL_TEMPLATES_H
+#if !defined(EVALUATOR_REAL_TEMPLATES_H)
 #define EVALUATOR_REAL_TEMPLATES_H
 
 #include "opcodes.h"

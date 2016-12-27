@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_VAR_CONTAINER_H
+#if !defined(EVALUATOR_VAR_CONTAINER_H)
 #define EVALUATOR_VAR_CONTAINER_H
 
 namespace evaluator_internal

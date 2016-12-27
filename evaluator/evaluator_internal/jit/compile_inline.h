@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_COMPILE_INLINE_H
+#if !defined(EVALUATOR_COMPILE_INLINE_H)
 #define EVALUATOR_COMPILE_INLINE_H
 
 #include <vector>
@@ -21,7 +21,6 @@ template<typename T>
 bool evaluator<T>::compile_inline()
 {
 #if !defined(EVALUATOR_JIT_DISABLE)
-    using namespace std;
     using namespace evaluator_internal;
     using namespace evaluator_internal_jit;
 
@@ -34,10 +33,10 @@ bool evaluator<T>::compile_inline()
     if(!m_jit_code || !m_jit_code_size)
     {
         m_jit_code_size = 128 * 1024; // 128 KiB
-        m_jit_code = (char *)exec_alloc(m_jit_code_size);
-        size_t call_addr = (size_t)(& m_jit_func);
-        size_t code_addr = (size_t)(& m_jit_code);
-        memcpy((void *)call_addr, (void *)code_addr, sizeof(void *));
+        m_jit_code = reinterpret_cast<char *>(exec_alloc(m_jit_code_size));
+        std::size_t call_addr = reinterpret_cast<std::size_t>(& m_jit_func);
+        std::size_t code_addr = reinterpret_cast<std::size_t>(& m_jit_code);
+        memcpy(reinterpret_cast<void *>(call_addr), reinterpret_cast<void *>(code_addr), sizeof(void *));
     }
     memset(m_jit_code, '\xc3', m_jit_code_size);
 
@@ -53,11 +52,11 @@ bool evaluator<T>::compile_inline()
 
 #if defined(EVALUATOR_JIT_X86) || defined(EVALUATOR_JIT_X64) || defined(EVALUATOR_JIT_X32)
 
-    if(is_float(jit_stack_curr) || is_double(jit_stack_curr))
+    if(is_float<T>() || is_double<T>())
     {
         char * last_push_pos = NULL;
         T * last_push_val = NULL;
-        for(typename vector<evaluator_object<T> >::const_iterator
+        for(typename std::vector<evaluator_object<T> >::const_iterator
             it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_constant() || it->is_variable())
@@ -82,7 +81,7 @@ bool evaluator<T>::compile_inline()
                     fld_ptr(curr, jit_stack_curr--);
                 }
 
-                string op = it->str();
+                const std::string op = it->str();
                 if     (op[0] == '+')
                     fadd(curr);
                 else if(op[0] == '-')
@@ -114,7 +113,7 @@ bool evaluator<T>::compile_inline()
                 else
                     fld_ptr(curr, jit_stack_curr);
 
-                string fu = it->str();
+                const std::string fu = it->str();
                 if     (fu == "sin")
                     fsin(curr);
                 else if(fu == "cos")
@@ -177,9 +176,9 @@ bool evaluator<T>::compile_inline()
 
         jit_stack_curr--;
     }
-    else if(is_complex_float(jit_stack_curr) || is_complex_double(jit_stack_curr))
+    else if(is_complex_float<T>() || is_complex_double<T>())
     {
-        for(typename vector<evaluator_object<T> >::const_iterator
+        for(typename std::vector<evaluator_object<T> >::const_iterator
             it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
         {
             if(it->is_constant() || it->is_variable())
@@ -191,7 +190,7 @@ bool evaluator<T>::compile_inline()
             }
             else if(it->is_operator())
             {
-                string op = it->str();
+                const std::string op = it->str();
                 jit_stack_curr -= 2;
                 if(op[0] == '+')
                     complex_add(curr, jit_stack_curr, jit_stack_curr + 1, jit_stack_curr);
@@ -212,7 +211,7 @@ bool evaluator<T>::compile_inline()
             }
             else if(it->is_function())
             {
-                string fu = it->str();
+                const std::string fu = it->str();
                 jit_stack_curr--;
                 if(fu == "real")
                     complex_real(curr, jit_stack_curr);
@@ -271,7 +270,7 @@ bool evaluator<T>::compile_inline()
     }
     else
     {
-        m_error_string = "Unsupported type `" + get_type_name(static_cast<T*>(NULL)) + "`!";
+        m_error_string = "Unsupported type `" + get_type_name<T>() + "`!";
         return false;
     }
 
@@ -285,8 +284,8 @@ bool evaluator<T>::compile_inline()
 
     if(jit_stack_curr != m_jit_stack)
     {
-        stringstream sst;
-        sst << "Stack size equal " << (size_t)(jit_stack_curr - m_jit_stack);
+        std::stringstream sst;
+        sst << "Stack size equal " << static_cast<std::size_t>(jit_stack_curr - m_jit_stack);
         m_error_string = sst.str();
         return false;
     }

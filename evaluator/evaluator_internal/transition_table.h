@@ -1,4 +1,4 @@
-#ifndef TRANSITION_TABLE_H
+#if !defined(TRANSITION_TABLE_H)
 #define TRANSITION_TABLE_H
 
 #include <vector>

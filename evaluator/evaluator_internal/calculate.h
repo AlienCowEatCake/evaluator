@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_CALCULATE_H
+#if !defined(EVALUATOR_CALCULATE_H)
 #define EVALUATOR_CALCULATE_H
 
 #include <stack>
@@ -12,7 +12,6 @@
 template<typename T>
 bool evaluator<T>::calculate(T & result)
 {
-    using namespace std;
     using namespace evaluator_internal;
 
     if(!is_parsed())
@@ -30,9 +29,9 @@ bool evaluator<T>::calculate(T & result)
     }
 #endif
 
-    stack<T> st;
+    std::stack<T> st;
 
-    for(typename vector<evaluator_object<T> >::const_iterator
+    for(typename std::vector<evaluator_object<T> >::const_iterator
         it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
     {
         if(it->is_constant())
@@ -41,14 +40,14 @@ bool evaluator<T>::calculate(T & result)
         }
         else if(it->is_variable())
         {
-            T val = it->eval();
+            const T val = it->eval();
             if(!is_incorrect(val))
             {
                 st.push(val);
             }
             else
             {
-                stringstream sst;
+                std::stringstream sst;
                 sst << "Constant `" << it->str() << "` must be defined!";
                 m_error_string = sst.str();
                 return false;
@@ -56,25 +55,25 @@ bool evaluator<T>::calculate(T & result)
         }
         else if(it->is_operator())
         {
-            T arg2 = st.top();
+            const T arg2 = st.top();
             st.pop();
-            T arg1 = st.top();
+            const T arg1 = st.top();
             st.pop();
-            T val = it->eval(arg1, arg2);
+            const T val = it->eval(arg1, arg2);
             st.push(val);
         }
         else if(it->is_function())
         {
-            T arg = st.top();
+            const T arg = st.top();
             st.pop();
-            T val = it->eval(arg);
+            const T val = it->eval(arg);
             st.push(val);
         }
     }
 
     if(st.size() != 1)
     {
-        stringstream sst;
+        std::stringstream sst;
         sst << "Stack size equal " << st.size();
         m_error_string = sst.str();
         return false;

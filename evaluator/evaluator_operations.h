@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_OPERATIONS_H
+#if !defined(EVALUATOR_OPERATIONS_H)
 #define EVALUATOR_OPERATIONS_H
 
 #include <cmath>
@@ -13,104 +13,104 @@ namespace evaluator_internal
 {
     // =============================================================================================
 
-    // All fultions (must NOT be inline).
+    // All fultions.
 
     template<typename T> T eval_sin(const T & ar)
     {
-        return sin(ar);
+        return std::sin(ar);
     }
 
     template<typename T> T eval_cos(const T & ar)
     {
-        return cos(ar);
+        return std::cos(ar);
     }
 
     template<typename T> T eval_tan(const T & ar)
     {
-        return tan(ar);
+        return std::tan(ar);
     }
 
     template<typename T> T eval_sinh(const T & ar)
     {
-        return sinh(ar);
+        return std::sinh(ar);
     }
 
     template<typename T> T eval_cosh(const T & ar)
     {
-        return cosh(ar);
+        return std::cosh(ar);
     }
 
     template<typename T> T eval_tanh(const T & ar)
     {
-        return tanh(ar);
+        return std::tanh(ar);
     }
 
     template<typename T> T eval_log(const T & ar)
     {
-        return log(ar);
+        return std::log(ar);
     }
 
     template<typename T> T eval_log10(const T & ar)
     {
-        return log10(ar);
+        return std::log10(ar);
     }
 
     template<typename T> T eval_exp(const T & ar)
     {
-        return exp(ar);
+        return std::exp(ar);
     }
 
     template<typename T> T eval_sqrt(const T & ar)
     {
-        return sqrt(ar);
+        return std::sqrt(ar);
     }
 
     template<typename T> T eval_log2(const T & ar)
     {
-        return log(ar) / log((T)2);
+        return std::log(ar) / std::log(static_cast<T>(2));
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcSinh/02/
     template<typename T> T eval_asinh(const T & ar)
     {
-        return log(ar + sqrt(ar * ar + (T)1));
+        return std::log(ar + std::sqrt(ar * ar + static_cast<T>(1)));
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcCosh/02/
     template<typename T> T eval_acosh(const T & ar)
     {
-        return log(ar + sqrt(ar * ar - (T)1));
+        return std::log(ar + std::sqrt(ar * ar - static_cast<T>(1)));
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcTanh/02/
     template<typename T> T eval_atanh(const T & ar)
     {
-        return (T)0.5 * log(((T)1 + ar) / ((T)1 - ar));
+        return static_cast<T>(0.5) * std::log((static_cast<T>(1) + ar) / (static_cast<T>(1) - ar));
     }
 
     template<typename T> std::complex<T> eval_abs(const std::complex<T> & ar)
     {
-        return abs(ar);
+        return std::abs(ar);
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcSin/02/
     template<typename T> std::complex<T> eval_asin(const std::complex<T> & ar)
     {
-        std::complex<T> I = std::complex<T>(0, 1);
-        return - I * log(I * ar + sqrt((T)1 - ar * ar));
+        const std::complex<T> I = std::complex<T>(0, 1);
+        return - I * std::log(I * ar + std::sqrt(static_cast<T>(1) - ar * ar));
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcCos/02/
     template<typename T> std::complex<T> eval_acos(const std::complex<T> & ar)
     {
-        return (T)3.14159265358979323846264338327950 / (T)2 - eval_asin(ar);
+        return static_cast<T>(3.14159265358979323846264338327950) / static_cast<T>(2) - eval_asin(ar);
     }
 
     // http://functions.wolfram.com/ElementaryFunctions/ArcTan/02/
     template<typename T> std::complex<T> eval_atan(const std::complex<T> & ar)
     {
-        std::complex<T> I = std::complex<T>(0, 1);
-        return I / (T)2 * (log((T)1 - I * ar) - log(I * ar + (T)1));
+        const std::complex<T> I = std::complex<T>(0, 1);
+        return I / static_cast<T>(2) * (std::log(static_cast<T>(1) - I * ar) - log(I * ar + static_cast<T>(1)));
     }
 
     template<typename T> std::complex<T> eval_imag(const std::complex<T> & ar)
@@ -125,38 +125,38 @@ namespace evaluator_internal
 
     template<typename T> std::complex<T> eval_conj(const std::complex<T> & ar)
     {
-        return conj(ar);
+        return std::conj(ar);
     }
 
     template<typename T> std::complex<T> eval_arg(const std::complex<T> & ar)
     {
-        return arg(ar);
+        return std::arg(ar);
     }
 
     template<typename T> T eval_abs(const T & ar)
     {
-        return fabs(ar);
+        return std::abs(ar);
     }
 
     template<typename T> T eval_asin(const T & ar)
     {
-        return asin(ar);
+        return std::asin(ar);
     }
 
     template<typename T> T eval_acos(const T & ar)
     {
-        return acos(ar);
+        return std::acos(ar);
     }
 
     template<typename T> T eval_atan(const T & ar)
     {
-        return atan(ar);
+        return std::atan(ar);
     }
 
     template<typename T> T eval_imag(const T & ar)
     {
         (void)ar;
-        return (T)0;
+        return static_cast<T>(0);
     }
 
     template<typename T> T eval_real(const T & ar)
@@ -171,8 +171,20 @@ namespace evaluator_internal
 
     template<typename T> T eval_arg(const T & ar)
     {
-        return arg(std::complex<T>(ar));
+        return std::arg(std::complex<T>(ar));
     }
+
+#define ADD_ABS_FOR_UNSIGNED_TYPE(TYPE) \
+    template<> inline unsigned TYPE eval_abs<unsigned TYPE>(const unsigned TYPE & ar) \
+    { \
+        return ar; \
+    }
+    ADD_ABS_FOR_UNSIGNED_TYPE(char)
+    ADD_ABS_FOR_UNSIGNED_TYPE(short)
+    ADD_ABS_FOR_UNSIGNED_TYPE(int)
+    ADD_ABS_FOR_UNSIGNED_TYPE(long)
+    ADD_ABS_FOR_UNSIGNED_TYPE(long long) /// @note C++11
+#undef ADD_ABS_FOR_UNSIGNED_TYPE
 
     // =============================================================================================
 
@@ -206,7 +218,7 @@ namespace evaluator_internal
 
     // =============================================================================================
 
-    // All operators (must NOT be inline).
+    // All operators.
 
     template<typename T> T eval_plus(const T & larg, const T & rarg)
     {
@@ -230,7 +242,7 @@ namespace evaluator_internal
 
     template<typename T> T eval_pow(const T & larg, const T & rarg)
     {
-        return pow(larg, rarg);
+        return std::pow(larg, rarg);
     }
 
     // =============================================================================================
@@ -253,13 +265,12 @@ namespace evaluator_internal
     template<typename T>
     void init_constants(std::map<std::string, T> & consts_map)
     {
-        T * type_test = NULL;
-        if(is_floating(type_test) || is_floating_complex(type_test))
+        if(is_floating<T>() || is_floating_complex<T>())
         {
             consts_map["pi"] = static_cast<T>(4) * eval_atan(static_cast<T>(1));
             consts_map["e"] = eval_exp(static_cast<T>(1));
         }
-        if(is_floating_complex(type_test))
+        if(is_floating_complex<T>())
         {
             T complex_I = eval_sqrt(static_cast<T>(-1));
             consts_map["i"] = complex_I;

@@ -3,6 +3,10 @@ CONFIG += console warn_all
 CONFIG -= app_bundle
 CONFIG -= qt
 
+*g++*|*clang* {
+    QMAKE_CXXFLAGS *= -Wno-long-long
+}
+
 HEADERS += \
     evaluator/evaluator.h \
     evaluator/evaluator_xyz.h \

@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_H
+#if !defined(EVALUATOR_H)
 #define EVALUATOR_H
 
 /*
@@ -14,20 +14,20 @@
 // ...
 // evaluator<double> p;
 // if(!p.parse("exp(-(0.5-x)*(0.5-x)-(0.5-z)*(0.5-z))"))
-//     cerr << p.get_error() << endl;
+//     std::cerr << p.get_error() << std::endl;
 // else if(!p.simplify()) // simplify is optional step
-//     cerr << p.get_error() << endl;
+//     std::cerr << p.get_error() << std::endl;
 // else
 // {
 //     if(!p.compile()) // compile is optional step
-//        cerr << p.get_error() << endl;
+//        std::cerr << p.get_error() << std::endl;
 //     p.set_var("x", 0.4);
 //     p.set_var("z", 0.8);
 //     double result;
 //     if(!p.calculate(result))
-//        cerr << p.get_error() << endl;
+//        std::cerr << p.get_error() << std::endl;
 //     else
-//         cout << result << endl;
+//         std::cout << result << std::endl;
 // }
 */
 
@@ -75,19 +75,19 @@ protected:
     // Error description if m_status == false
     std::string m_error_string;
 
-#if !defined(EVALUATOR_JIT_DISABLE)
-    // Current conpiling status: true is compiled, false is not compiled
+    // Current compiling status: true is compiled, false is not compiled
     bool m_is_compiled;
+#if !defined(EVALUATOR_JIT_DISABLE)
     // Executable memory for bytecode
     char * volatile m_jit_code;
     // Function pointer to same memory
     void(EVALUATOR_JIT_CALL * m_jit_func)();
     // Size of allocated executable memory
-    size_t m_jit_code_size;
+    std::size_t m_jit_code_size;
     // Memory for stack, used in compiled code
     T * volatile m_jit_stack;
     // Size of allocated memory for stack
-    size_t m_jit_stack_size;
+    std::size_t m_jit_stack_size;
 #endif
 
     // Return incorrect big number (uninitialized variable)
@@ -138,6 +138,12 @@ public:
     bool simplify();
     // Calculate current expression and write result to 'result'
     bool calculate(T & result);
+
+    // Get current compiling status
+    inline bool is_compiled() const
+    {
+        return m_is_compiled;
+    }
 
     // Compile expression, all functions will be inlined
     bool compile_inline();

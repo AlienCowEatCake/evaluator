@@ -1,5 +1,5 @@
 CXX ?= g++
-CXXFLAGS ?= -Wall -Wextra -ansi -pedantic -pipe -O3 -march=native -mtune=native -DNDEBUG
+CXXFLAGS ?= -Wall -Wextra -ansi -pedantic -pipe -O3 -march=native -mtune=native -DNDEBUG -Wno-long-long
 LDFLAGS ?= -Wl,-O1 -s -lrt
 EXECUTABLE = bench
 LINK.o = $(LINK.cc)

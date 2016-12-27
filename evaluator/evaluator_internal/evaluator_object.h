@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_OBJECT_H
+#if !defined(EVALUATOR_OBJECT_H)
 #define EVALUATOR_OBJECT_H
 
 #include <string>

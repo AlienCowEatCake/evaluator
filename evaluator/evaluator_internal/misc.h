@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_MISC_H
+#if !defined(EVALUATOR_MISC_H)
 #define EVALUATOR_MISC_H
 
 #include <vector>
@@ -8,21 +8,23 @@
 #include <iostream>
 #include "../evaluator.h"
 #include "../evaluator_operations.h"
+#include "type_detection.h"
 
 // Return incorrect big number (uninitialized variable)
 template<typename T>
 template<typename U>
 T evaluator<T>::incorrect_number(const std::complex<U> &) const
 {
-    U num = std::numeric_limits<U>::max();
-    return static_cast<T>(std::complex<U>(num, num));
+    static const U max_num = std::numeric_limits<U>::max();
+    return static_cast<T>(std::complex<U>(max_num, max_num));
 }
 
 template<typename T>
 template<typename U>
 T evaluator<T>::incorrect_number(const U &) const
 {
-    return static_cast<T>(std::numeric_limits<U>::max());
+    static const U max_num = std::numeric_limits<U>::max();
+    return static_cast<T>(max_num);
 }
 
 // Check whether a number is incorrect (uninitialized variable)
@@ -30,27 +32,29 @@ template<typename T>
 template<typename U>
 bool evaluator<T>::is_incorrect(const std::complex<U> & val) const
 {
-    static U num = std::numeric_limits<U>::max() * (static_cast<U>(1.0) - static_cast<U>(1e-3));
-    return val.real() >= num && val.imag() >= num;
+    static const U max_num = std::numeric_limits<U>::max();
+    static const U lim_num = max_num * (static_cast<U>(1) - static_cast<U>(1e-3));
+    return val.real() >= lim_num && val.imag() >= lim_num;
 }
 
 template<typename T>
 template<typename U>
 bool evaluator<T>::is_incorrect(const U & val) const
 {
-    static U num = std::numeric_limits<U>::max() * (static_cast<U>(1.0) - static_cast<U>(1e-3));
-    return val >= num;
+    using namespace evaluator_internal;
+    static const U max_num = std::numeric_limits<U>::max();
+    static const U lim_num = is_floating<U>() ? max_num * (static_cast<U>(1) - static_cast<U>(1e-3)) : max_num;
+    return val >= lim_num;
 }
 
 // Primary initialization
 template<typename T>
 void evaluator<T>::init()
 {
-    using namespace std;
     using namespace evaluator_internal;
     m_status = false;
-#if !defined(EVALUATOR_JIT_DISABLE)
     m_is_compiled = false;
+#if !defined(EVALUATOR_JIT_DISABLE)
     m_jit_code = NULL;
     m_jit_code_size = 0;
     m_jit_stack = NULL;
@@ -105,8 +109,8 @@ void evaluator<T>::copy_from_other(const evaluator & other)
     m_status = other.m_status;
     m_error_string = other.m_error_string;
     m_transition_table = other.m_transition_table;
-#if !defined(EVALUATOR_JIT_DISABLE)
     m_is_compiled = false;
+#if !defined(EVALUATOR_JIT_DISABLE)
     m_jit_code = NULL;
     m_jit_code_size = 0;
     m_jit_stack = NULL;
@@ -119,17 +123,20 @@ void evaluator<T>::copy_from_other(const evaluator & other)
 template<typename T>
 void evaluator<T>::reset_vars()
 {
-    using namespace std;
     using namespace evaluator_internal;
     m_variables.clear();
     if(is_parsed())
-        for(typename vector<evaluator_object<T> >::iterator
+    {
+        for(typename std::vector<evaluator_object<T> >::iterator
             it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
+        {
             if(it->is_variable())
             {
                 m_variables[it->str()].value() = incorrect_number(T());
                 *it = evaluator_object<T>(it->str(), m_variables[it->str()].pointer());
             }
+        }
+    }
 }
 
 // Constructors and destructor
@@ -157,13 +164,9 @@ evaluator<T>::~evaluator()
 {
 #if !defined(EVALUATOR_JIT_DISABLE)
     if(m_jit_code && m_jit_code_size)
-    {
         evaluator_internal_jit::exec_dealloc(m_jit_code, m_jit_code_size);
-    }
     if(m_jit_stack && m_jit_stack_size)
-    {
         delete [] m_jit_stack;
-    }
 #endif
 }
 
@@ -180,18 +183,17 @@ const evaluator<T> & evaluator<T>::operator = (const evaluator & other)
 template<typename T>
 void evaluator<T>::debug_print() const
 {
-    using namespace std;
     using namespace evaluator_internal;
-    for(typename vector<evaluator_object<T> >::const_iterator
+    for(typename std::vector<evaluator_object<T> >::const_iterator
         it = m_expression.begin(), it_end = m_expression.end(); it != it_end; ++it)
     {
-        cout << it->str();
+        std::cout << it->str();
         if(it->is_variable())
-            cout << "->" << it->eval() << ' ';
+            std::cout << "->" << it->eval() << ' ';
         else
-            cout << ' ';
+            std::cout << ' ';
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
 #endif // EVALUATOR_MISC_H

@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_PARSE_H
+#if !defined(EVALUATOR_PARSE_H)
 #define EVALUATOR_PARSE_H
 
 /*
@@ -85,20 +85,17 @@
 template<typename T>
 bool evaluator<T>::parse(const std::string & str)
 {
-    using namespace std;
     using namespace evaluator_internal;
 
     m_expression.clear();
     m_error_string.clear();
     m_status = true;
-#if !defined(EVALUATOR_JIT_DISABLE)
     m_is_compiled = false;
-#endif
 
-    vector<string> tokens;
-    for(string::const_iterator it = str.begin(), it_end = str.end(); it != it_end;)
+    std::vector<std::string> tokens;
+    for(std::string::const_iterator it = str.begin(), it_end = str.end(); it != it_end;)
     {
-        string a;
+        std::string a;
         if((*it >= '0' && *it <= '9') || *it == '.' || *it == ',')
         {
             while(it != str.end() && *it >= '0' && *it <= '9')
@@ -125,7 +122,7 @@ bool evaluator<T>::parse(const std::string & str)
                     a.push_back(*(it++));
                 }
             }
-            transform(a.begin(), a.end(), a.begin(), ::tolower);
+            std::transform(a.begin(), a.end(), a.begin(), ::tolower);
             tokens.push_back(a);
         }
         else if((*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
@@ -136,8 +133,8 @@ bool evaluator<T>::parse(const std::string & str)
             {
                 a.push_back(*(it++));
             }
-            string b(a);
-            transform(a.begin(), a.end(), a.begin(), ::tolower);
+            const std::string b(a);
+            std::transform(a.begin(), a.end(), a.begin(), ::tolower);
             if(m_functions.find(a) != m_functions.end() || m_constants.find(a) != m_constants.end())
                 tokens.push_back(a);
             else
@@ -146,7 +143,7 @@ bool evaluator<T>::parse(const std::string & str)
         else if(m_operators.find(*it) != m_operators.end() || *it == '(' || *it == ')')
         {
             a.push_back(*(it++));
-            transform(a.begin(), a.end(), a.begin(), ::tolower);
+            std::transform(a.begin(), a.end(), a.begin(), ::tolower);
             tokens.push_back(a);
         }
         else if(*it == ' ' || *it == '\t' || *it == '\0' || *it == '\r' ||
@@ -157,7 +154,7 @@ bool evaluator<T>::parse(const std::string & str)
         else
         {
             m_status = false;
-            m_error_string = string("Unexpected symbol `") + string().assign(1, *it) + string("`!");
+            m_error_string = std::string("Unexpected symbol `") + std::string().assign(1, *it) + std::string("`!");
             return false;
         }
     }
@@ -183,15 +180,15 @@ bool evaluator<T>::parse(const std::string & str)
     };
     token_type ttype_curr = TTYPE_EPS;
     bool unary_minus = false;
-    stack<string> st;
+    std::stack<std::string> st;
 
-    size_t token_pos_curr = 0;
-    size_t table_pos_curr = 0;
-    stack<size_t> table_stack;
+    std::size_t token_pos_curr = 0;
+    std::size_t table_pos_curr = 0;
+    std::stack<std::size_t> table_stack;
     for(bool flag_continue = true; flag_continue;)
     {
         bool good_token = false;
-        for(vector<string>::const_iterator it = m_transition_table[table_pos_curr].Terminals.begin(),
+        for(std::vector<std::string>::const_iterator it = m_transition_table[table_pos_curr].Terminals.begin(),
             it_end = m_transition_table[table_pos_curr].Terminals.end(); !good_token && it != it_end; ++it)
         {
             if(token_pos_curr < tokens.size())
@@ -222,18 +219,18 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 else if(*it == "var" || *it == "const")
                 {
-                    bool last_token = token_pos_curr + 1 >= tokens.size();
+                    const bool last_token = token_pos_curr + 1 >= tokens.size();
                     const char * curr_tok = tokens[token_pos_curr].c_str();
                     const char * next_tok = (last_token ? NULL : tokens[token_pos_curr + 1].c_str());
 
-                    bool first_letter = (curr_tok[0] >= 'a' && curr_tok[0] <= 'z') ||
-                                        (curr_tok[0] >= 'A' && curr_tok[0] <= 'Z');
-                    bool first_number = curr_tok[0] >= '0' && curr_tok[0] <= '9';
-                    bool first_dot = curr_tok[0] == '.';
-                    bool second_number = curr_tok[1] >= '0' && curr_tok[1] <= '9';
-                    bool next_operator = !last_token && m_operators.find(next_tok[0]) != m_operators.end();
-                    bool next_bracket = !last_token && next_tok[0] == ')';
-                    bool is_constant = m_constants.find(curr_tok) != m_constants.end();
+                    const bool first_letter = (curr_tok[0] >= 'a' && curr_tok[0] <= 'z') ||
+                                              (curr_tok[0] >= 'A' && curr_tok[0] <= 'Z');
+                    const bool first_number = curr_tok[0] >= '0' && curr_tok[0] <= '9';
+                    const bool first_dot = curr_tok[0] == '.';
+                    const bool second_number = curr_tok[1] >= '0' && curr_tok[1] <= '9';
+                    const bool next_operator = !last_token && m_operators.find(next_tok[0]) != m_operators.end();
+                    const bool next_bracket = !last_token && next_tok[0] == ')';
+                    const bool is_constant = m_constants.find(curr_tok) != m_constants.end();
 
                     if(*it == "var")
                     {
@@ -293,7 +290,7 @@ bool evaluator<T>::parse(const std::string & str)
                 {
                 case TTYPE_CONST:
                 {
-                    string a = tokens[token_pos_curr];
+                    std::string a = tokens[token_pos_curr];
                     if(unary_minus)
                     {
                         a = "-" + a;
@@ -304,7 +301,7 @@ bool evaluator<T>::parse(const std::string & str)
                             it = m_constants.find(tokens[token_pos_curr]);
                     if(it == m_constants.end())
                     {
-                        stringstream b(a);
+                        std::stringstream b(a);
                         b >> c;
                     }
                     else
@@ -314,7 +311,7 @@ bool evaluator<T>::parse(const std::string & str)
                 }
                 case TTYPE_VAR:
                 {
-                    string a = tokens[token_pos_curr];
+                    const std::string a = tokens[token_pos_curr];
                     if(unary_minus)
                     {
                         T m_one = static_cast<T>(-1);
@@ -322,7 +319,7 @@ bool evaluator<T>::parse(const std::string & str)
                         st.push("*");
                         unary_minus = false;
                     }
-                    typename map<string, var_container<T> >::const_iterator itc = m_variables.find(a);
+                    typename std::map<std::string, var_container<T> >::const_iterator itc = m_variables.find(a);
                     if(itc == m_variables.end())
                     {
                         m_variables[a].value() = incorrect_number(T());
@@ -336,7 +333,7 @@ bool evaluator<T>::parse(const std::string & str)
                 {
                     if(unary_minus)
                     {
-                        T m_one = static_cast<T>(-1);
+                        const T m_one = static_cast<T>(-1);
                         m_expression.push_back(evaluator_object<T>("-1", m_one));
                         st.push("*");
                         unary_minus = false;
@@ -398,7 +395,7 @@ bool evaluator<T>::parse(const std::string & str)
                     flag_continue = false;
             }
             else
-                table_pos_curr = (size_t)m_transition_table[table_pos_curr].Jump;
+                table_pos_curr = static_cast<std::size_t>(m_transition_table[table_pos_curr].Jump);
         }
         else
         {
@@ -406,7 +403,7 @@ bool evaluator<T>::parse(const std::string & str)
             {
                 m_status = false;
                 if(token_pos_curr < tokens.size())
-                    m_error_string = string("Bad token `") + tokens[token_pos_curr] + string("`!");
+                    m_error_string = std::string("Bad token `") + tokens[token_pos_curr] + std::string("`!");
                 else
                     m_error_string = "Unexpected end of string!";
                 return false;

@@ -1,4 +1,4 @@
-#ifndef EVALUATOR_OPCODES_H
+#if !defined(EVALUATOR_OPCODES_H)
 #define EVALUATOR_OPCODES_H
 
 #include <complex>
@@ -30,9 +30,9 @@ void fld_ptr(char *& code_curr, const T * ptr)
     using namespace evaluator_internal;
 #if defined(EVALUATOR_JIT_X86)
     // fld    [dq]word ptr ds:[ptr]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -48,9 +48,9 @@ void fld_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fld    [dq]word ptr [rdx]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -62,9 +62,9 @@ void fld_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fld    [dq]word ptr [eax]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -79,9 +79,9 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     using namespace evaluator_internal;
 #if defined(EVALUATOR_JIT_X86)
     // fstp    [dq]word ptr ds:[ptr]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -97,9 +97,9 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fstp    [dq]word ptr [rdx]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -111,9 +111,9 @@ void fstp_ptr(char *& code_curr, const T * ptr)
     memcpy(code_curr, & tmp_mem, sizeof(T*));
     code_curr += sizeof(T*);
     // fstp    [dq]word ptr [eax]
-    if(is_float(ptr))
+    if(is_float<T>())
         *(code_curr++) = '\xd9';
-    else if(is_double(ptr))
+    else if(is_double<T>())
         *(code_curr++) = '\xdd';
     else
         assert(false);
@@ -202,7 +202,7 @@ inline void fldz(char *& code_curr)
 inline void fxch(char *& code_curr, int i = 1)
 {
     *(code_curr++) = '\xd9';
-    *(code_curr++) = '\xc8' + i;
+    *(code_curr++) = '\xc8' + static_cast<char>(i);
 }
 
 // 0 := 0 * 2.0 ** 1
@@ -293,14 +293,14 @@ inline void frndint(char *& code_curr)
 inline void fldi(char *& code_curr, int i)
 {
     *(code_curr++) = '\xd9';
-    *(code_curr++) = '\xc0' + i;
+    *(code_curr++) = '\xc0' + static_cast<char>(i);
 }
 
 // i := 0, pop
 inline void fstpi(char *& code_curr, int i)
 {
     *(code_curr++) = '\xdd';
-    *(code_curr++) = '\xd8' + i;
+    *(code_curr++) = '\xd8' + static_cast<char>(i);
 }
 
 // 0 := -0
@@ -355,7 +355,7 @@ inline void jz(char *& code_curr, char * code_jump)
 {
     if(code_jump)
     {
-        size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+        const std::size_t diff = reinterpret_cast<std::size_t>(code_jump) - reinterpret_cast<std::size_t>(code_curr) - 2;
         *(code_curr++) = '\x74';
         memcpy(code_curr, & diff, 1);
         code_curr++;
@@ -372,7 +372,7 @@ inline void ja(char *& code_curr, char * code_jump)
 {
     if(code_jump)
     {
-        size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+        const std::size_t diff = reinterpret_cast<std::size_t>(code_jump) - reinterpret_cast<std::size_t>(code_curr) - 2;
         *(code_curr++) = '\x77';
         memcpy(code_curr, & diff, 1);
         code_curr++;
@@ -389,7 +389,7 @@ inline void jb(char *& code_curr, char * code_jump)
 {
     if(code_jump)
     {
-        size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+        const std::size_t diff = reinterpret_cast<std::size_t>(code_jump) - reinterpret_cast<std::size_t>(code_curr) - 2;
         *(code_curr++) = '\x72';
         memcpy(code_curr, & diff, 1);
         code_curr++;
@@ -406,7 +406,7 @@ inline void jnz(char *& code_curr, char * code_jump)
 {
     if(code_jump)
     {
-        size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+        const std::size_t diff = reinterpret_cast<std::size_t>(code_jump) - reinterpret_cast<std::size_t>(code_curr) - 2;
         *(code_curr++) = '\x75';
         memcpy(code_curr, & diff, 1);
         code_curr++;
@@ -423,7 +423,7 @@ inline void jmp(char *& code_curr, char * code_jump)
 {
     if(code_jump)
     {
-        size_t diff = (size_t)code_jump - (size_t)code_curr - 2;
+        const std::size_t diff = reinterpret_cast<std::size_t>(code_jump) - reinterpret_cast<std::size_t>(code_curr) - 2;
         *(code_curr++) = '\xeb';
         memcpy(code_curr, & diff, 1);
         code_curr++;
@@ -435,14 +435,14 @@ inline void jmp(char *& code_curr, char * code_jump)
     }
 }
 
-// mov	bl,ah
+// mov  bl,ah
 inline void mov_bl_ah(char *& code_curr)
 {
     *(code_curr++) = '\x88';
     *(code_curr++) = '\xe3';
 }
 
-// test	bl,1
+// test bl,1
 inline void test_bl_1(char *& code_curr)
 {
     *(code_curr++) = '\xf6';
@@ -477,22 +477,6 @@ inline void fld2(char *& code_curr)
     fld1(code_curr);
     fld1(code_curr);
     fadd(code_curr);
-}
-
-// Something wrong, we need to crash!
-inline void crash(char *& code_curr)
-{
-    // xor    eax,eax
-#if defined(EVALUATOR_JIT_X64)
-    *(code_curr++) = '\x48';
-#endif
-    *(code_curr++) = '\x31';
-    *(code_curr++) = '\xc0';
-    // call   eax
-    *(code_curr++) = '\xff';
-    *(code_curr++) = '\xd0';
-    // ret
-    *(code_curr++) = '\xc3';
 }
 
 // Load real part of 'ptr'
@@ -532,28 +516,32 @@ template<typename T>
 inline void fld_ptr_real(char *& code_curr, const T * ptr)
 {
     (void)ptr;
-    crash(code_curr);
+    (void)code_curr;
+    assert(false);
 }
 
 template<typename T>
 inline void fld_ptr_imag(char *& code_curr, const T * ptr)
 {
     (void)ptr;
-    crash(code_curr);
+    (void)code_curr;
+    assert(false);
 }
 
 template<typename T>
 inline void fstp_ptr_real(char *& code_curr, const T * ptr)
 {
     (void)ptr;
-    crash(code_curr);
+    (void)code_curr;
+    assert(false);
 }
 
 template<typename T>
 inline void fstp_ptr_imag(char *& code_curr, const T * ptr)
 {
     (void)ptr;
-    crash(code_curr);
+    (void)code_curr;
+    assert(false);
 }
 
 } // namespace evaluator_internal_jit

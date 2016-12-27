@@ -11,7 +11,7 @@ void transition_table_record::set_values(const std::string & T, int J, bool A, b
     Return = R;
     Error = E;
 
-    size_t beg = 0, end = T.find_first_of(" \t\r\n");
+    std::size_t beg = 0, end = T.find_first_of(" \t\r\n");
     while(end != std::string::npos)
     {
         Terminals.push_back(T.substr(beg, end - beg));
